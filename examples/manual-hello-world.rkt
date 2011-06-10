@@ -50,48 +50,44 @@ have the right understanding of the evaluation.
 
 
 ;; This is a translation of the loop.
-(let/ec escape
-  (let loop ()
-    (conditional-escape escape)
-    
-    (increment-data-pointer)
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
+(loop (increment-data-pointer)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
 
-    (increment-byte)
-    (increment-byte)
+      (increment-byte)
+      (increment-byte)
 
-    (increment-data-pointer)
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
+      (increment-data-pointer)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
 
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
 
-    (increment-data-pointer)
-    (increment-byte)
-    (increment-byte)
-    (increment-byte)
+      (increment-data-pointer)
+      (increment-byte)
+      (increment-byte)
+      (increment-byte)
 
-    (increment-data-pointer)
-    (increment-byte)
+      (increment-data-pointer)
+      (increment-byte)
 
-    (decrement-data-pointer)
-    (decrement-data-pointer)
-    (decrement-data-pointer)
-    (decrement-data-pointer)
+      (decrement-data-pointer)
+      (decrement-data-pointer)
+      (decrement-data-pointer)
+      (decrement-data-pointer)
 
-    (decrement-byte)
-    (loop)))
+      (decrement-byte))
+
 
 
 ;; > ++ .                  print 'H'

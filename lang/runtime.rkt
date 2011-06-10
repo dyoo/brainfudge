@@ -45,11 +45,15 @@
   (vector-set! data (unbox dataptr) (read-byte)))
 
 
-;; [
-;; Call an-escape if the data under the pointer is zero.
-(define-syntax-rule (conditional-escape an-escape)
-  (when (= (vector-ref data (unbox dataptr)) 0)
-    (an-escape)))
+
+(define-syntax-rule (loop body ...)
+  (let repeat ()
+    (if (= (vector-ref data (unbox dataptr)) 0)
+        (void)
+        (begin
+          body ...
+          (repeat)))))
+
 
 
 (provide increment-data-pointer
@@ -58,4 +62,4 @@
          decrement-byte
          output-byte
          accept-byte
-         conditional-escape)
+         loop)
