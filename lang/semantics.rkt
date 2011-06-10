@@ -60,7 +60,12 @@
 
 ;; ,
 (define-syntax-rule (accept-byte)
-  (vector-set! data (unbox dataptr) (read-byte)))
+  (vector-set! data
+               (unbox dataptr)
+               (let ([val (read-byte)])
+                 (if (eof-object? val)
+                     0
+                     val))))
 
 
 ;; [ ... ]
