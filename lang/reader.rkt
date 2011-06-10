@@ -19,28 +19,31 @@
 ;; ]
 ;;
 ;; It ignores anything else.
-;;
-;;
-;; This module will take input port with a program, and produce an AST
-;; using Racket's native syntax objects.
-;;
-;; AST  :== (toplevel EXPR ...)
-;;
-;; EXPR :==  (increment-data-pointer)
-;;         | (decrement-data-pointer)
-;;         | (increment-byte)
-;;         | (decrement-byte)
-;;         | (output-byte)
-;;         | (accept-byte)
-;;         | (loop EXPR ...)
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; The following is a simple recursive-descent parser.  We might want
+;; to do something more sophisticated, using Racket's parser-tools
+;; collection, for example.
+;;
+;; http://docs.racket-lang.org/parser-tools/index.html
+;;
+;; One of the advantages of the parser tools is that it should help
+;; maintain source locations within their own token structure.  In the
+;; baby parser, we're only caring about the textual lexeme, and not
+;; where it occurs in the input port.
 
 
 
 ;; A token stream represents the list of tokens we can get from the
 ;; system.
 (define-struct tstream (elts) #:mutable)
+
+
+;; We want two features from our token stream: peek and pull out new
+;; tokens.
+
 
 ;; get-tokens: input-port -> tstream
 ;; Constructs a new tstream from an input port.
@@ -79,6 +82,10 @@
     (first (tstream-elts a-tstream))]))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Tests!
+
 ;; Let's try a few test cases to make sure the tokenization is doing
 ;; the right thing.
 (let ([a-tstream (get-tokens (open-input-string "<>"))])
@@ -110,12 +117,33 @@
   (check-equal? (next a-tstream) eof))
 
 
-  
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; Now let's work on the parser.
+;;
+;;
+;; This module will take input port with a program, and produce an AST
+;; using Racket's native syntax objects.
+;;
+;; AST  :== (toplevel EXPR ...)
+;;
+;; EXPR :==  (increment-data-pointer)
+;;         | (decrement-data-pointer)
+;;         | (increment-byte)
+;;         | (decrement-byte)
+;;         | (output-byte)
+;;         | (accept-byte)
+;;         | (loop EXPR ...)
+
+
+
 ;; parse-expr: input-port -> syntax-object
 (define (parse-expr a-tstream)
   (let ([next-token (next a-tstream)])
     (cond
-     [(eof-object? tokens)
+     [(eof-object? next-token)
       (error 'parse-expr "unexpected eof")]
      [else
       (case next-token
@@ -132,14 +160,18 @@
         [(#\,)
          (datum->syntax #f '(accept-byte))]
         [(#\[)
-         (let ([inner-exprs (parse-loop-body a-tstream)])
+         (let ([inner-exprs (parse-exprs a-tstream)])
            (unless (char=? (next a-tstream) #\])
              (error 'parse-expr "Expected ']"))
            (datum->syntax #f (cons 'loop inner-exprs)))]
         [else
          (error 'parse-expr)])])))
 
-(define (parse-loop-body a-tstream)
+;; parse-exprs: tstream -> (listof syntax-object)
+;;
+;; Tries to parse as many exprs as possible, till we hit either eof or
+;; a #\].
+(define (parse-exprs a-tstream)
   (let ([peeked-token (peek a-tstream)])
     (cond
      [(eof-object? peeked-token)
@@ -149,24 +181,89 @@
      [else
       (let ([next-expr (parse-expr a-tstream)])
         (cons next-expr
-              (parse-loop-body a-tstream)))])))
+              (parse-exprs a-tstream)))])))
 
 
-(let ([tstream (get-tokens (open-input-stream "<>+-.,"))])
-  (check-equal? (parse-expr tstream) #'(decrement-data-pointer)))
-  
-  
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; simple test
+(let ([tstream (get-tokens (open-input-string "<>+-.,"))])
+  (check-equal? (syntax->datum (parse-expr tstream))
+                '(decrement-data-pointer))
+  (check-equal? (syntax->datum (parse-expr tstream))
+                '(increment-data-pointer))
+  (check-equal? (syntax->datum (parse-expr tstream))
+                '(increment-byte))
+  (check-equal? (syntax->datum (parse-expr tstream))
+                '(decrement-byte))
+  (check-equal? (syntax->datum (parse-expr tstream))
+                '(output-byte))
+  (check-equal? (syntax->datum (parse-expr tstream))
+                '(accept-byte))
+  (check-exn exn:fail? (lambda () (parse-expr tstream))))
+
+
+;; Let's try some loops.
+(let ([tstream (get-tokens (open-input-string "[+-]"))])
+  (check-equal? (syntax->datum (parse-expr tstream))
+                '(loop (increment-byte) (decrement-byte)))
+  (check-exn exn:fail? (lambda () (parse-expr tstream))))
+
+(let ([tstream (get-tokens (open-input-string "[>[+-]<]"))])
+  (check-equal? (syntax->datum (parse-expr tstream))
+                '(loop (increment-data-pointer)
+                       (loop (increment-byte)
+                             (decrement-byte))
+                       (decrement-data-pointer)))
+  (check-exn exn:fail? (lambda () (parse-expr tstream))))
+
+
+;; If we unbalance, we expect to see exceptions.
+(check-exn exn:fail? (lambda () (parse-expr (get-tokens (open-input-string "[")))))
+(check-exn exn:fail? (lambda () (parse-expr (get-tokens (open-input-string "]")))))
+(check-exn exn:fail? (lambda () (parse-expr (get-tokens (open-input-string "[[]")))))
+(check-exn exn:fail? (lambda () (parse-expr (get-tokens (open-input-string "[[[][+[[[[]")))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Now that we have a parser, let't provide the two functions that a
+;; language reader module needs to define.
+
+
+;; my-read: input-port -> s-expression
+(define (my-read in)
+  (syntax->datum
+   (my-read-syntax #f in)))
 
 
 
-;; (define (my-read in)
-;;   (syntax->datum
-;;    (my-read-syntax #f in)))
+;; my-read-syntax: any input-port -> syntax-object
+;;
+(define (my-read-syntax src in)
+  ;; Note: we're ignoring our src, but if our parser were a bit nicer,
+  ;; it would also keep track of the src in the resulting syntax
+  ;; objects.
+  (datum->syntax #f (cons 'toplevel 
+                          (parse-exprs (get-tokens in)))))
 
 
-;; (define (my-read-syntax src in)
-;;   (void))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; The "cat" utility's source code looks like this:  ,[.[-],]
+;; Let's see that we can parse it.
+(check-equal? (syntax->datum
+               (my-read-syntax
+                #f
+                (open-input-string "  ,  [   .   [  - ]  , ]  ")))
+              '(toplevel (accept-byte)
+                         (loop (output-byte)
+                               (loop (decrement-byte))
+                               (accept-byte))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;; (provide (rename-out [my-read read]
-;;                      [my-read-syntax read-syntax]))
+
+;; Now that we're satisfied with our own definitions, we provide them
+;; for others to use us as a library.
+(provide (rename-out [my-read read]
+                     [my-read-syntax read-syntax]))

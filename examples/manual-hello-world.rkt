@@ -35,105 +35,106 @@ have the right understanding of the evaluation.
 
 |#
 
+(toplevel 
 
-(increment-byte)
-(increment-byte)
-(increment-byte)
-(increment-byte)
-(increment-byte)
-(increment-byte)
-(increment-byte)
-(increment-byte)
-(increment-byte)
-(increment-byte)
-
-
-
-;; This is a translation of the loop.
-(loop (increment-data-pointer)
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-
-      (increment-byte)
-      (increment-byte)
-
-      (increment-data-pointer)
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-
-      (increment-data-pointer)
-      (increment-byte)
-      (increment-byte)
-      (increment-byte)
-
-      (increment-data-pointer)
-      (increment-byte)
-
-      (decrement-data-pointer)
-      (decrement-data-pointer)
-      (decrement-data-pointer)
-      (decrement-data-pointer)
-
-      (decrement-byte))
+ (increment-byte)
+ (increment-byte)
+ (increment-byte)
+ (increment-byte)
+ (increment-byte)
+ (increment-byte)
+ (increment-byte)
+ (increment-byte)
+ (increment-byte)
+ (increment-byte)
 
 
 
-;; > ++ .                  print 'H'
-(increment-data-pointer) (increment-byte) (increment-byte) (output-byte)
+ ;; This is a translation of the loop.
+ (loop (increment-data-pointer)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
 
-;; > + .                   print 'e'
-(increment-data-pointer) (increment-byte) (output-byte)
+       (increment-byte)
+       (increment-byte)
 
-;; +++++ ++ .              print 'l'
-(increment-byte)(increment-byte)(increment-byte)(increment-byte)(increment-byte) (increment-byte)(increment-byte) (output-byte)
+       (increment-data-pointer)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
 
-;; .                       print 'l'
-(output-byte)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
 
+       (increment-data-pointer)
+       (increment-byte)
+       (increment-byte)
+       (increment-byte)
 
-;; +++ .                   print 'o'
-(increment-byte) (increment-byte) (increment-byte) (output-byte)
+       (increment-data-pointer)
+       (increment-byte)
 
-;; > ++ .                  print ' '
-(increment-data-pointer) (increment-byte) (increment-byte) (output-byte)
+       (decrement-data-pointer)
+       (decrement-data-pointer)
+       (decrement-data-pointer)
+       (decrement-data-pointer)
 
-
-;; << +++++ +++++ +++++ .  print 'W'
-(decrement-data-pointer) (decrement-data-pointer)
-(increment-byte) (increment-byte)(increment-byte)(increment-byte)(increment-byte)
-(increment-byte) (increment-byte)(increment-byte)(increment-byte)(increment-byte)
-(increment-byte) (increment-byte)(increment-byte)(increment-byte)(increment-byte)
-(output-byte)
-
-;; > .                     print 'o'
-(increment-data-pointer) (output-byte)
-
-;; +++ .                   print 'r'
-(increment-byte) (increment-byte) (increment-byte) (output-byte)
-
-;; ----- - .               print 'l'
-(decrement-byte) (decrement-byte) (decrement-byte) (decrement-byte) (decrement-byte)
-(decrement-byte) (output-byte)
-
-;; ----- --- .             print 'd'
-(decrement-byte) (decrement-byte) (decrement-byte) (decrement-byte) (decrement-byte)
-(decrement-byte) (decrement-byte) (decrement-byte) (output-byte)
+       (decrement-byte))
 
 
-;; > + .                   print '!'
-(increment-data-pointer) (increment-byte) (output-byte)
 
-;; > .                     print '\n
-(increment-data-pointer) (output-byte)
+ ;; > ++ .                  print 'H'
+ (increment-data-pointer) (increment-byte) (increment-byte) (output-byte)
+
+ ;; > + .                   print 'e'
+ (increment-data-pointer) (increment-byte) (output-byte)
+
+ ;; +++++ ++ .              print 'l'
+ (increment-byte)(increment-byte)(increment-byte)(increment-byte)(increment-byte) (increment-byte)(increment-byte) (output-byte)
+
+ ;; .                       print 'l'
+ (output-byte)
+
+
+ ;; +++ .                   print 'o'
+ (increment-byte) (increment-byte) (increment-byte) (output-byte)
+
+ ;; > ++ .                  print ' '
+ (increment-data-pointer) (increment-byte) (increment-byte) (output-byte)
+
+
+ ;; << +++++ +++++ +++++ .  print 'W'
+ (decrement-data-pointer) (decrement-data-pointer)
+ (increment-byte) (increment-byte)(increment-byte)(increment-byte)(increment-byte)
+ (increment-byte) (increment-byte)(increment-byte)(increment-byte)(increment-byte)
+ (increment-byte) (increment-byte)(increment-byte)(increment-byte)(increment-byte)
+ (output-byte)
+
+ ;; > .                     print 'o'
+ (increment-data-pointer) (output-byte)
+
+ ;; +++ .                   print 'r'
+ (increment-byte) (increment-byte) (increment-byte) (output-byte)
+
+ ;; ----- - .               print 'l'
+ (decrement-byte) (decrement-byte) (decrement-byte) (decrement-byte) (decrement-byte)
+ (decrement-byte) (output-byte)
+
+ ;; ----- --- .             print 'd'
+ (decrement-byte) (decrement-byte) (decrement-byte) (decrement-byte) (decrement-byte)
+ (decrement-byte) (decrement-byte) (decrement-byte) (output-byte)
+
+
+ ;; > + .                   print '!'
+ (increment-data-pointer) (increment-byte) (output-byte)
+
+ ;; > .                     print '\n
+ (increment-data-pointer) (output-byte))

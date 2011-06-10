@@ -2,9 +2,17 @@
 
 ;; http://en.wikipedia.org/wiki/Brainfuck
 
-(define dataptr (box 0))
 (define DATA-SIZE 30000)
+(define dataptr (box 0))
 (define data (make-vector DATA-SIZE 0))
+
+
+(define-syntax-rule (toplevel body ...)
+  (begin
+    (set-box! dataptr 0)
+    (for ([i (in-range (vector-length data))])
+         (vector-set! data i 0))
+    body ...))
 
 
 ;; Look at the byte at the data pointer.
@@ -56,7 +64,8 @@
 
 
 
-(provide increment-data-pointer
+(provide toplevel
+         increment-data-pointer
          decrement-data-pointer
          increment-byte
          decrement-byte
