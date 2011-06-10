@@ -45,7 +45,7 @@
   (vector-set! data (unbox dataptr) (read-byte)))
 
 
-
+;; [ ... ]
 (define-syntax-rule (loop body ...)
   (let repeat ()
     (if (= (vector-ref data (unbox dataptr)) 0)
