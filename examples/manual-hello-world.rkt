@@ -1,10 +1,10 @@
 #lang racket/base
-(require "../lang/runtime.rkt")
+(require "../lang/semantics.rkt")
 
 #|
 
 A manual translation of the hello world program, just to make sure I
-have the right understanding of the evaluation.
+have the right understanding of the semantics.  I hand-translate:
 
 
 
@@ -33,7 +33,12 @@ have the right understanding of the evaluation.
 > .                     print '\n
 
 
+
+into the program below:
+
 |#
+
+
 
 (toplevel 
 

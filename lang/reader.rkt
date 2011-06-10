@@ -1,15 +1,14 @@
 #lang s-exp syntax/module-reader
-(planet dyoo/brainfudge/lang/lang)
+(planet dyoo/brainfudge/lang/language)
 #:read my-read
 #:read-syntax my-read-syntax
-
 
 
 ;; Now that we have a parser, let't provide the two functions that a
 ;; language reader module needs to define.  These are the read and
 ;; read-syntax functions.
-
 (require "parser.rkt")
+
 
 
 ;; my-read: input-port -> s-expression
