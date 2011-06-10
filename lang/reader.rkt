@@ -57,8 +57,8 @@
          (loop)])))))
 
 
-
 ;; next: tstream -> (U token eof)
+;; Produces the next element of the stream.
 (define (next a-tstream)
   (cond
    [(empty? (tstream-elts a-tstream))
@@ -68,7 +68,9 @@
       (set-tstream-elts! a-tstream (rest (tstream-elts a-tstream)))
       next-token)]))
 
+
 ;; peek: tstream -> (U token eof)
+;; Peeks at the next element of the stream, but doesn't consume it.
 (define (peek a-tstream)
   (cond
    [(empty? (tstream-elts a-tstream))
@@ -109,35 +111,51 @@
 
 
   
+;; parse-expr: input-port -> syntax-object
+(define (parse-expr a-tstream)
+  (let ([next-token (next a-tstream)])
+    (cond
+     [(eof-object? tokens)
+      (error 'parse-expr "unexpected eof")]
+     [else
+      (case next-token
+        [(#\>)
+         (datum->syntax #f '(increment-data-pointer))]
+        [(#\<)
+         (datum->syntax #f '(decrement-data-pointer))]
+        [(#\+)
+         (datum->syntax #f '(increment-byte))]
+        [(#\-)
+         (datum->syntax #f '(decrement-byte))]
+        [(#\.)
+         (datum->syntax #f '(output-byte))]
+        [(#\,)
+         (datum->syntax #f '(accept-byte))]
+        [(#\[)
+         (let ([inner-exprs (parse-loop-body a-tstream)])
+           (unless (char=? (next a-tstream) #\])
+             (error 'parse-expr "Expected ']"))
+           (datum->syntax #f (cons 'loop inner-exprs)))]
+        [else
+         (error 'parse-expr)])])))
 
-;; ;; parse-expr: input-port -> syntax-object
-;; (define (parse-exprs src in)
-;;   (let ([tokens (get-tokens in)])
-;;     (cond
-;;      [(empty? tokens)
-;;       (error 'parse-expr "unexpected end of tokens")]
-;;      [else
-;;       (case (first tokens)
-;;         [(#\>)
-;;          (datum->syntax #f '(increment-data-pointer))]
-;;         [(#\<)
-;;          (datum->syntax #f '(decrement-data-pointer))]
-;;         [(#\+)
-;;          (datum->syntax #f '(increment-byte))]
-;;         [(#\-)
-;;          (datum->syntax #f '(decrement-byte))]
-;;         [(#\.)
-;;          (datum->syntax #f '(output-byte))]
-;;         [(#\,)
-;;          (datum->syntax #f '(accept-byte))]
-;;         [(#\[)
-;;          (let ([inner-exprs
-;;                 (parse-exprs (rest tokens))])
-         
+(define (parse-loop-body a-tstream)
+  (let ([peeked-token (peek a-tstream)])
+    (cond
+     [(eof-object? peeked-token)
+      empty]
+     [(char=? peeked-token #\])
+      empty]
+     [else
+      (let ([next-expr (parse-expr a-tstream)])
+        (cons next-expr
+              (parse-loop-body a-tstream)))])))
 
 
-
-
+(let ([tstream (get-tokens (open-input-stream "<>+-.,"))])
+  (check-equal? (parse-expr tstream) #'(decrement-data-pointer)))
+  
+  
 
 
 
