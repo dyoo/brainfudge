@@ -1,6 +1,16 @@
 #lang racket/base
 
 ;; http://en.wikipedia.org/wiki/Brainfuck
+;;
+;; This file defines the semantics of a Brainfudge program.
+;;
+;;
+;; A program is expected to use the following forms below.
+;; 
+;; We use syntax rules here, but we could easily use regular functions
+;; instead.  I'm tempted to do so.
+
+
 
 (define DATA-SIZE 30000)
 (define dataptr (box 0))

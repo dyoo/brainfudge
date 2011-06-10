@@ -7,7 +7,8 @@
 
 ;; http://en.wikipedia.org/wiki/Brainfuck
 ;;
-;; The language consists of programs using the following characters:
+;; The surface syntax of Brainfudge consists of the following
+;; characters:
 ;;
 ;; >
 ;; <
@@ -18,7 +19,14 @@
 ;; [
 ;; ]
 ;;
-;; It ignores anything else.
+;; and we ignore everything else.
+
+
+
+;; This module takes programs written in the surface syntax, and
+;; translates them to Racket syntax objects.  See reader.rkt to see
+;; how the parser is used.
+
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
