@@ -1,0 +1,2 @@
+#lang planet dyoo/brainfudge
+,[.[-],]

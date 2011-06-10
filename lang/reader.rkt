@@ -1,5 +1,5 @@
 #lang s-exp syntax/module-reader
-(planet dyoo/lang/runtime)
+(planet dyoo/brainfudge/lang/lang)
 #:read my-read
 #:read-syntax my-read-syntax
 
@@ -21,4 +21,9 @@
   ;; Note: we're ignoring our src, but if our parser were a bit nicer,
   ;; it would also keep track of the src in the resulting syntax
   ;; objects.
-  (parse-toplevel (get-tokens in)))
+  (let ([token-stream (get-tokens in)])
+    (cond
+     [(eof-object? (peek token-stream))
+      eof]
+     [else
+      (parse-toplevel token-stream)])))
