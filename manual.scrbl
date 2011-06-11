@@ -8,7 +8,7 @@
           (for-label racket/base))
 
 @title{Mucking up a Racket with Fudge}
-
+@author+email["Danny Yoo" "dyoo@cs.wpi.edu"]
 
 @section{Introduction}
 
@@ -42,7 +42,7 @@ like a Lisp.
 
 Actually, let's take a closer look at a Racket program.  Every Racket
 program begins with a funny line at the very top that, on first
-glance, looks ridiculously redundant:
+glance, looks redundant:
     @codeblock{
     #lang racket
     }
@@ -59,30 +59,30 @@ how to take an arbitrary document and decide what HTML parsing rules
 to apply to it.
 
 
-HTML 5 (http://diveintohtml5.org/) tries to make this determination
+@link["http://divintohtml5.org/"]{HTML 5} tries to make this determination
 somewhat more straightforward: we can define an HTML 5 document by
 putting a DOCTYPE element at the very top of the file which
-self-describes the document as being "html".
+self-describes the document as being @emph{html}.
 
     @verbatim{
     <!DOCTYPE html>
     <html lang="en">
-    <head><title>Hello world</title></head>
-    <body><p>Hello world!</p></body>
+      <head><title>Hello world</title></head>
+      <body><p>Hello world!</p></body>
     </html>
     }
 
 
-Going back to the world of Racket, we see by analogy that the #lang
+Going back to the world of Racket, we see by analogy that the @litchar{#lang}
 line in a Racket program is a self-description of how to treat the
-rest of the program.  (Actually, the #lang line is quite bit more
+rest of the program.  (Actually, the @litchar{#lang} line is quite bit more
 active than this, but we'll get to this in a moment.)
 
 
-The "racket" part in the lang line isn't inevitable: the main Racket
+The @racket[racket] part in the @litchar{#lang} line isn't inevitable: the main Racket
 distribution, in fact, comes bundled with several languages which can
 take the place of the word "racket".  Many of these languages
-(racket/base, typed/racket, lazy) still look like Racket... but some
+(@racketmodname[racket/base], @racketmodname[typed/racket], @racketmodname[lazy]) still look like Racket... but some
 of them don't have many parentheses at all.  Here's one example:
     @codeblock{
     #lang datalog
@@ -94,9 +94,9 @@ of them don't have many parentheses at all.  Here's one example:
     ancestor(A, B)?
     }
 
-
+    
 What may be surprising is that the mechanism for loading in new
-languages into Racket is wide open.  Let us expand our minds.
+languages into Racket is wide open.  Let's expand our minds.
     @codeblock{
     #lang planet dyoo/brainfudge
 
@@ -104,20 +104,16 @@ languages into Racket is wide open.  Let us expand our minds.
     >++++++++[<++++>-] <.>+++++++++++[<++++++++>-]<-.--------.+++
     >.------.--------.[-]>++++++++[<++++>- ]<+.[-]++++++++++.
     }
-This language does not look like Racket.  It looks more like line
-noise.
-
-
-In fact, this is
+This language does not look like Racket.  It looks like line
+noise.  This is
 @link["http://en.wikipedia.org/wiki/Brainf*ck"]{Brainf*ck}.  Although
 this language is not included in the main distribution, because it is
 on @link["http://planet.racket-lang.org"]{PLaneT}, anyone with Racket
 can easily play with it.
 
 
-
-How do we build something like this?  That's what this tutorial's
-about.
+Ignoring the question of @emph{why?!!} someone would do this, let's ask another:
+how do we build this?  That's what this tutorial's about.
 
 
 
