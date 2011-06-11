@@ -99,10 +99,11 @@ What may be surprising is that the mechanism for loading in new
 languages into Racket is wide open.  Let's expand our minds.
     @codeblock{
     #lang planet dyoo/brainfudge
-
-    >+++++++++[<++++++++>-]<.>+++++++[<++++>-]<+.+++++++..+++.[-]
-    >++++++++[<++++>-] <.>+++++++++++[<++++++++>-]<-.--------.+++
-    >.------.--------.[-]>++++++++[<++++>- ]<+.[-]++++++++++.
+    ++++++[>++++++++++++<-]>.
+    >++++++++++[>++++++++++<-]>+.
+    +++++++..+++.>++++[>+++++++++++<-]>.
+    <+++[>----<-]>.<<<<<+++[>+++++<-]>.
+    >>.+++.------.--------.>>+.
     }
 This language does not look like Racket.  It looks like line
 noise.  This is
@@ -119,7 +120,7 @@ how do we build this?  That's what this tutorial's about.
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-@section{The high-level breakdown}
+@section{What does @litchar{#lang} do?}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
@@ -137,12 +138,12 @@ how do we build this?  That's what this tutorial's about.
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-@section{Parsing the Surface syntax}
+@section{Parsing the surface syntax}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-@section{Getting onto PLaneT}
+@section{Landing on PLaneT}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
