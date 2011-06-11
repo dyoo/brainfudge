@@ -1,5 +1,4 @@
 #lang scribble/manual
-@(require (for-label racket))
 
 @(require planet/scribble
           planet/version

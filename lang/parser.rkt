@@ -241,7 +241,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 
-;; Now that we're satisfied with our own definitions, we provide them
-;; for others to use us as a library.
-(provide (all-defined-out))
-
+;; Now that we're satisfied with our own definitions, we provide
+;; out the bindings that matter.
+(provide parse-toplevel get-tokens peek)
