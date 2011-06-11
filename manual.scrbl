@@ -161,6 +161,8 @@ and connect those two in a language and reader.
 Talk about the semantics of @tt{brainf*ck}, code it up, and write test cases
 to make sure we're doing the right thing.
 
+Use the language with the s-exp reader.
+
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
