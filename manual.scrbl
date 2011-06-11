@@ -7,17 +7,17 @@
           racket/sandbox
           (for-label racket/base))
 
+
 @title{Mucking up a Racket with Fudge}
 @author+email["Danny Yoo" "dyoo@cs.wpi.edu"]
 
 @section{Introduction}
 
-When people say that @link["http://racket-lang.org"]{Racket} is a
+If people say that @link["http://racket-lang.org"]{Racket} is just a
 @link["http://en.wikipedia.org/wiki/Scheme_(programming_language)"]{Scheme},
 they are short-selling Racket a little.  It's more accurate to say
-that Racket is a language laboratory, with support for many different
+that Racket is a @link["http://docs.racket-lang.org/guide/languages.html"]{language} laboratory, with support for many different
 languages.
-
 
 Is that really true?  Racket does include a nice
 @link["http://docs.racket-lang.org/guide/macros.html"]{macro} system ,
@@ -36,11 +36,11 @@ example, we can get while loops into Racket with relative ease:
       (printf "never going to let you down\n"))
     }
 So we can certainly extend the language.  But this still looks just
-like a Lisp.
+like a Scheme.
 
 
 
-Actually, let's take a closer look at a Racket program.  Every Racket
+Let's take a closer look at a Racket program.  Every Racket
 program begins with a funny line at the very top that, on first
 glance, looks redundant:
     @codeblock{
@@ -54,12 +54,12 @@ program?  Isn't that obvious?
 We can understand the situation better by looking at another
 environment on our desktop, namely the web browser.  A web browser
 supports different kinds of HTML variants, since HTML is a moving
-target, and browsers have come up with crazy rules for figuring out
+target, and browsers have come up with @link["http://en.wikipedia.org/wiki/Quirks_mode"]{crazy rules} for figuring out
 how to take an arbitrary document and decide what HTML parsing rules
 to apply to it.
 
 
-@link["http://divintohtml5.org/"]{HTML 5} tries to make this determination
+@link["http://diveintohtml5.org/"]{HTML 5} tries to make this determination
 somewhat more straightforward: we can define an HTML 5 document by
 putting a DOCTYPE element at the very top of the file which
 self-describes the document as being @emph{html}.
@@ -79,11 +79,11 @@ rest of the program.  (Actually, the @litchar{#lang} line is quite bit more
 active than this, but we'll get to this in a moment.)
 
 
-The @racket[racket] part in the @litchar{#lang} line isn't inevitable: the main Racket
+The @racketmodname[racket] part in the @litchar{#lang} line isn't inevitable: the main Racket
 distribution, in fact, comes bundled with several languages which can
-take the place of the word "racket".  Many of these languages
+take the place of the word @racketmodname[racket].  Many of these languages
 (@racketmodname[racket/base], @racketmodname[typed/racket], @racketmodname[lazy]) still look like Racket... but some
-of them don't have many parentheses at all.  Here's one example:
+of them don't.  Here's one example:
     @codeblock{
     #lang datalog
     ancestor(A, B) :- parent(A, B).
@@ -93,10 +93,12 @@ of them don't have many parentheses at all.  Here's one example:
     parent(bob, john).
     ancestor(A, B)?
     }
+This is an example of a @link["http://en.wikipedia.org/wiki/Datalog"]{Datalog}
+program that deals with logical relations.  Neat!
 
-    
-What may be surprising is that the mechanism for loading in new
-languages into Racket is wide open.  Let's expand our minds.
+
+What might be surprising is that the mechanism for using different
+languages in Racket is wide open.  Let's expand our minds.
     @codeblock{
     #lang planet dyoo/brainfudge
     ++++++[>++++++++++++<-]>.
@@ -107,33 +109,57 @@ languages into Racket is wide open.  Let's expand our minds.
     }
 This language does not look like Racket.  It looks like line
 noise.  This is
-@link["http://en.wikipedia.org/wiki/Brainf*ck"]{Brainf*ck}.  Although
+@link["http://en.wikipedia.org/wiki/Brainf*ck"]{@tt{brainf*ck}}.  Although
 this language is not included in the main distribution, because it is
 on @link["http://planet.racket-lang.org"]{PLaneT}, anyone with Racket
 can easily play with it.
 
 
 Ignoring the question of @emph{why?!!} someone would do this, let's ask another:
-how do we build this?  That's what this tutorial's about.
-
-
-
-
-@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-@section{What does @litchar{#lang} do?}
-@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+how do we build this?  This tutorial will cover how to build this language
+into Racket from scratch.
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-@section{The Brainf*ck language}
+@section{Flight preparations}
+@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Let's first make a work directory where we'll keep everything.
+
+[create a directory]
+
+
+Ultimately, we want to put the fruit of our labor onto PLaneT. 
+Let's set up a PLaneT development link so the Racket environment knows about our work directory.  
+
+[create a user account if necessary]
+
+[set up the planet development link.]
+
+[Make sure the development link is working.]
+
+
+@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+@section{The view from high orbit}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+Quickly explain, at a high level, what we're going to do:
+
+[what happens with #lang?]
+
+[readers] 
+
+what the syntax/module-reader does for us,
+
+and what we're going to do: define the semantics, define the surface syntax,
+and connect those two in a language and reader.
 
 
-@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-@section{Writing the semantics}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+@section{The @tt{brainf*ck} language}
+@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Talk about the semantics of @tt{brainf*ck}, code it up, and write test cases
+to make sure we're doing the right thing.
 
 
 
@@ -141,9 +167,25 @@ how do we build this?  That's what this tutorial's about.
 @section{Parsing the surface syntax}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+Write a quick-and-dirty parser.
+[Just use simple code for this; don't use parser-tools yet.]
+
+
+
+@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+@section{Lisping a language}
+@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Make a module language that re-exports the semantics.  Use syntax/module-reader
+to tie together the parser and the semantics, and try some examples.
+
+
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @section{Landing on PLaneT}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+Getting the work onto PLaneT.  Creating the package.  Trying it out with fileinject.
+Finally upload it onto PLaneT.
 
