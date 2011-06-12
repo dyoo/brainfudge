@@ -501,26 +501,28 @@ For example,
                                                   1
                                                   20
                                                   32
-                                                  5)))
-                                                      
+                                                  5)))]
+The first argument that we pass into @racket[datum->syntax] lets us tells Racket any
+lexical-scoping information that we know about the datum, but in this case, we don't have
+any on hand, so we just give it @racket[#f].  Let's look at the structure of this syntax object.
+@interaction[#:eval my-evaluator                                                      
                  an-example-syntax-object
                  (syntax? an-example-syntax-object)
                  (syntax->datum an-example-syntax-object)
                  (symbol? (syntax->datum an-example-syntax-object))
                  ]
-This object remembers that it was on line 1, column 20, position 32, and was five characters
-long.  We can query this:
+So a syntax object is like an s-expression, and we can get the underlying datum with @racket[syntax->datum].
 @interaction[#:eval my-evaluator 
                  (syntax-line an-example-syntax-object)
                  (syntax-column an-example-syntax-object)
                  (syntax-position an-example-syntax-object)
                  (syntax-span an-example-syntax-object)
                  ]
-The first argument that we pass into @racket[datum->syntax] lets us tells Racket any
-lexical-scoping information that we know about the datum, but in this case, we don't have
-any on hand, so we just give it @racket[#f].
+Furthermore, this object remembers that it was on line 1, column 20, position 32, and was five characters
+long.
 
-Ok, let's write a parser.  We'll write the following into @filepath{parser.rkt}.
+
+Now that we have some experience playing with syntax objects, let's write a parser.  We'll write the following into @filepath{parser.rkt}.
 @filebox["parser.rkt"]{
                           @codeblock|{
 #lang racket
@@ -600,7 +602,7 @@ Ok, let's write a parser.  We'll write the following into @filepath{parser.rkt}.
       [else
        (cons next-expr (parse-exprs source-name in))])))
 }|}
-The parser isn't anything too tricky, although there's a little bit of 
+This parser isn't anything too tricky, although there's a little bit of 
 messiness because it needs to handle brackets recursively.  That part
 is supposed to be a little messy anyway, since it's the capstone that builds tree structure out
 of a linear character stream.  (If we were using a parenthesized language, we
@@ -625,18 +627,21 @@ Good!  So we're able to parse syntax objects out of an input stream.
                     (syntax-span second-stx)]
 And as we can see, we can explode the syntax object and look at its datum.  We should note
 that the parser is generating syntax objects that use the same names as the defined names we
-have in our @filepath{language.rkt} module language.  Yup, that's deliberate, and we'll see that in
+have in our @filepath{language.rkt} module language.  Yup, that's deliberate, and we'll see why in
 the next section.
 
 
-Also, each syntax object remembers where it came from, which in a more sophisticated language
-will let us give good error messages when Bad Things happen.  If we were more rigorous, we'd probably write unit tests for the parser as well with @racketmodname[rackunit], and
-make sure to produce good error messages when bad things happen (like unbalanced brackets or parentheses.
-@;; Yes, the unbalanced parentheses is a joke.
+We mentioned that the parser wasn't too hard... but then again, we haven't written good traps
+for error conditions.  This parser is a baby parser. 
+If we were more rigorous, we'd probably implement it with the parser-tools collection,
+write unit tests for the parser with @racketmodname[rackunit], and
+make sure to produce good error messages when Bad Things happen 
+(like having unbalanced brackets or parentheses.
+@;; Yes, the unbalanced parentheses here is a joke.  I wonder if anyone will correct me for it.
 
 
 
-But now that we've got the language and a parser, how do we tie them together?
+Still, we've now got the language and a parser.  How do we tie them together?
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @section{Crossing the wires}
