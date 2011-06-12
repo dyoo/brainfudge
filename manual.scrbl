@@ -138,7 +138,7 @@ Since we're starting from scratch, let's first make a work directory
 where we'll keep our source code.  I'll call the directory @filepath{bf/}, but you can use
 whatever name you want.
     @verbatim|{
-    dyoo@thunderclap:~$ mkdir bf
+    $ mkdir bf
     }|
 
 Ultimately, we want to put the fruit of our labor onto @link["http://docs.racket-lang.org/planet/index.html"]{PLaneT},
@@ -149,7 +149,7 @@ on PLaneT with my username @tt{dyoo}.  You can
 
 If we enter the following at the command line,
 @verbatim|{
-   dyoo@thunderclap:~$ planet link dyoo bf.plt 1 0 bf
+   $ planet link dyoo bf.plt 1 0 bf
    }|
 we'll make a development link that will associate any module path of the form @racket[(planet dyoo/bf/...)] 
 to our local @filepath{bf/} directory.  Later on, when we create a package and upload it to PLaneT,
@@ -160,14 +160,14 @@ immediately switch over to the one on the PLaneT server.
 But does the link actually work?  Let's write a very simple module in our work directory, and
 then see that Racket can find it through PLaneT.
     @verbatim|{
-    dyoo@thunderclap:~$ cd bf
-    dyoo@thunderclap:~/bf$ cat >hello.rkt
+    $ cd bf
+    ~/bf$ cat >hello.rkt
     #lang racket
     "hello world"
     }|
 Ok, let's see if Racket can find our magnificant @filepath{hello.rkt} module if we use the PLaneTized version of the name. 
     @verbatim|{
-    dyoo@thunderclap:~/bf$ racket
+    ~/bf$ racket
     Welcome to Racket v5.1.1.
     > (require (planet dyoo/bf/hello))
     "hello world"
@@ -582,7 +582,7 @@ Now that we have some experience playing with syntax objects, let's write a pars
                                          following-position) 
                          (port-next-location in)])
             (datum->syntax #f 
-                           `(bracket ,@elements)
+                           `(brackets ,@elements)
                            (list source-name
                                  line
                                  column 
@@ -647,8 +647,56 @@ Still, we've now got the language and a parser.  How do we tie them together?
 @section{Crossing the wires}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Make a module language that re-exports the semantics.  Use syntax/module-reader
-to tie together the parser and the semantics, and try some examples.
+This part is fairly straightforward.  We have two pieces in hand:
+@itemlist[@item{A parser in @filepath{parser.rkt} for the surface syntax that produces ASTs}
+          @item{A module language in @filepath{language.rkt} that provides the meaning for those ASTs.}
+]
+To combine these two pieces together, we want to define a @link["http://docs.racket-lang.org/guide/hash-lang_reader.html"]{reader} that associates the two.
+When Racket encounters a @litchar{#lang} line of the form:
+    @codeblock{
+    #lang planet dyoo/bf
+    }
+it will look for a reader module in @filepath{lang/reader.rkt} and use it to parse the file.
+
+Racket provides a helper module called @racketmodname[syntax/module-reader] to handle most of the 
+dirty work; let's use it.  Make a @filepath{lang/} subdirectory, and create @filepath{reader.rkt}
+in that subdirectory, with the following content:
+@filebox["lang/reader.rkt"]{
+@codeblock|{
+#lang s-exp syntax/module-reader
+(planet dyoo/bf/language)
+#:read my-read
+#:read-syntax my-read-syntax
+
+(require "../parser.rkt")
+
+(define (my-read in)
+  (syntax->datum (my-read-syntax #f in)))
+
+(define (my-read-syntax src in)
+  (parse-expr src in))
+}|}
+The second line of the file tells @racket[syntax/module-reader] that any syntax objects that
+come out are intended to take on their semantics from our language.  @racket[syntax/module-reader]
+is predisposed to assume that programs are read using @racket[read] and @racket[read-syntax], so we
+override that default and plug in our @racket[parse-expr] function into place.
+
+
+Now that we have all these pieces together, does any of this work?  Let's try it!
+@verbatim|{
+$ cat hello2.rkt
+#lang planet dyoo/bf
+++++++[>++++++++++++<-]>.
+>++++++++++[>++++++++++<-]>+.
++++++++..+++.>++++[>+++++++++++<-]>.
+<+++[>----<-]>.<<<<<+++[>+++++<-]>.
+>>.+++.------.--------.>>+.
+
+$ racket hello2.rkt 
+Hello, World!   
+           }|
+
+Sweet, sweet words.
 
 
 
@@ -657,6 +705,66 @@ to tie together the parser and the semantics, and try some examples.
 @section{Landing on PLaneT}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Getting the work onto PLaneT.  Creating the package.  Trying it out with fileinject.
-Finally upload it onto PLaneT.
+Finally, we want to get this work onto @link["http://docs.racket-lang.org/planet/index.html"]{PLaneT} so that other people can share in the joy
+of writing @tt{brainf*ck} in Racket.  Let's do it!
 
+
+First, let's go back to the parent of our work directory.  Once we're there, we'll use the @tt{planet create} command.
+
+@verbatim|{
+$ planet create bf
+planet create bf
+MzTarring ./...
+MzTarring ./lang...
+
+WARNING:
+	Package has no info.rkt file. This means it will not have a description or documentation on the PLaneT web site.
+
+$ ls -l bf.plt
+-rw-rw-r-- 1 dyoo nogroup 3358 Jun 12 19:39 bf.plt       
+           }|
+
+There are a few warnings, because we haven't defined an @filepath{info.rkt} which provides metadata
+about our package.  Good, diligent citizens would  @link["http://docs.racket-lang.org/planet/Developing_Packages_for_PLaneT.html#(part._.Create_an__info_rkt__.File__.Optional_)"]{do so}.
+
+
+Before we upload the package, let's make sure the @filepath{bf.plt} package works for us locally.  We'll simulate an installation.  First, let's break the development link.
+@verbatim{
+$ planet unlink dyoo bf.plt 1 0
+}
+If we try running our test program from before, it should fail on us.
+
+@verbatim{
+$ racket hello2.rkt 
+require: PLaneT could not find the requested package: Server had no matching package: No package matched the specified criteria
+}
+Ok, that was expected.  Let's use tt@{planet fileinject} to simulate an installation of our package from PLaneT.
+
+@verbatim{
+$ planet fileinject dyoo bf.plt 1 1
+planet fileinject dyoo bf.plt 1 1
+
+============= Installing bf.plt on Sun, 12 Jun 2011 19:49:50 =============
+raco setup: Unpacking archive from /home/dyoo/work/brainfudge/bf.plt
+raco setup:   unpacking README in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
+raco setup:   unpacking hello.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
+raco setup:   unpacking hello2.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
+raco setup:   making directory lang in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
+raco setup:   unpacking reader.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./lang/
+raco setup:   unpacking language.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
+raco setup:   unpacking parser.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
+raco setup:   unpacking semantics.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
+raco setup: version: 5.1.1 [3m]
+...
+          }
+Lots and lots of output later, the package should be installed.
+
+If we try running our test program again...
+@verbatim{
+$ racket hello2.rkt 
+Hello, World!
+          }
+Good!
+
+Once we're finally satisfied with the package, we can upload it onto PLaneT.  If you log onto @link["http://planet.racket-lang.org"]{planet.racket-lang.org}, the user interface will allow
+you to upload your @filepath{bf.plt} package.

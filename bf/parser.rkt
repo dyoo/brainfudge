@@ -55,7 +55,7 @@
                                          following-position) 
                          (port-next-location in)])
             (datum->syntax #f 
-                           `(bracket ,@elements)
+                           `(brackets ,@elements)
                            (list source-name
                                  line 
                                  column 
@@ -98,9 +98,9 @@
 
 
 ;; bracket tests
-(check-equal? '(bracket) 
+(check-equal? '(brackets) 
               (syntax->datum (parse-expr 'test (open-input-string "[]"))))
-(check-equal? '(bracket (bracket))
+(check-equal? '(brackets (brackets))
               (syntax->datum (parse-expr 'test (open-input-string "[[]]"))))
 
 
@@ -108,7 +108,7 @@
 (let ([port (open-input-string ",[.,]")])
   (check-equal? '(comma) 
                 (syntax->datum (parse-expr 'test port)))
-  (check-equal? '(bracket (period) (comma))
+  (check-equal? '(brackets (period) (comma))
                 (syntax->datum (parse-expr 'test port)))
   (check-equal? eof
                 (parse-expr 'test port)))
