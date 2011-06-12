@@ -7,8 +7,7 @@
           racket/sandbox
           (for-label racket/base))
 
-
-@title{Mucking up a Racket with Fudge}
+@title{F*dging up a Racket}
 @author+email["Danny Yoo" "dyoo@cs.wpi.edu"]
 
 @section{Introduction}
