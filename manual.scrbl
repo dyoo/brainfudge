@@ -15,7 +15,10 @@
 @(define my-evaluator
    (parameterize ([sandbox-output 'string]
                   [sandbox-error-output 'string])
-     (make-evaluator 'racket/base)))
+     (make-evaluator 'racket/base
+                     #:requires
+                     (list (resolve-planet-path 
+                            `(planet dyoo/brainfudge/bf/parser))))))
 
 
 
@@ -468,13 +471,16 @@ Let's get that parser working!
 
 The Racket toolchain includes a professional-strength lexer and parser
 in the @link["http://docs.racket-lang.org/parser-tools/index.html"]{parser-tools} collection.
-For the sake of keeping this example simple, we'll
-write a simple recursive-descent parser without using parser-tools.  (But if our surface
-syntax were any more complicated, we might reconsider this decision.)  The input to our parser will be an @link["http://docs.racket-lang.org/reference/ports.html"]{input-port},
-from which we can read in bytes.
-The expected output should be some kind of abstract syntax tree.
+For the sake of keeping this example terse, we'll
+write a simple @link["http://en.wikipedia.org/wiki/Recursive_descent_parser"]{recursive-descent parser} without using the parser-tools collection.  (But if our surface
+syntax were any more complicated, we might reconsider this decision.)
 
-What representation
+
+Our parser will consume an @link["http://docs.racket-lang.org/reference/ports.html"]{input-port},
+from which we can read in bytes with @racket[read-byte], or find out where we are with @racket[port-next-location].  Our parser will also take in a @racket[source-name] parameter, which
+will be some string that names the source of the @racket[input-port].
+
+The expected output of a successful parse should be some kind of abstract syntax tree.  What representation
 should we use for the tree?  Although we can use s-expressions, 
 they're pretty lossy: they don't record where they came from 
 in the original source text.  For the case of @tt{brainf*ck}, we might not care,
@@ -517,7 +523,120 @@ any on hand, so we just give it @racket[#f].
 Ok, let's write a parser.  We'll write the following into @filepath{parser.rkt}.
 @filebox["parser.rkt"]{
                           @codeblock|{
+#lang racket
+
+;; The only visible export of this module will be parse-expr.
+(provide parse-expr)
+
+;; While loops...
+(define-syntax-rule (while test body ...)
+  (let loop ()
+    (when test
+      body ...
+      (loop))))
+
+
+;; ignorable-next-char?: input-port -> boolean
+;; Produces true if the next character is something we should ignore.
+(define (ignorable-next-char? in)
+  (let ([next-ch (peek-char in)])
+    (cond
+      [(eof-object? next-ch)
+       #f]
+      [else
+       (not (member next-ch '(#\< #\> #\+ #\- #\, #\. #\[ #\])))])))
+
+
+;; parse-expr: any input-port -> (U syntax eof)
+;; Either produces a syntax object or the eof object.
+(define (parse-expr source-name in)
+  (while (ignorable-next-char? in) (read-char in))
+  (let*-values ([(line column position) (port-next-location in)]
+                [(next-char) (read-char in)])
+    
+    ;; We'll use this function to generate the syntax objects by
+    ;; default.
+    ;; The only category this doesn't cover are brackets.
+    (define (default-make-syntax type)
+      (datum->syntax #f 
+                     (list type)
+                     (list source-name line column position 1)))
+    (cond
+      [(eof-object? next-char) eof]
+      [else
+       (case next-char
+         [(#\<) (default-make-syntax 'less-than)]
+         [(#\>) (default-make-syntax 'greater-than)]
+         [(#\+) (default-make-syntax 'plus)]
+         [(#\-) (default-make-syntax 'minus)]
+         [(#\,) (default-make-syntax 'comma)]
+         [(#\.) (default-make-syntax 'period)]
+         [(#\[)
+          ;; The slightly messy case is bracket.  We keep reading
+          ;; a list of exprs, and then construct a wrapping bracket
+          ;; around the whole thing.
+          (let*-values ([(elements) (parse-exprs source-name in)]
+                        [(following-line following-column 
+                                         following-position) 
+                         (port-next-location in)])
+            (datum->syntax #f 
+                           `(bracket ,@elements)
+                           (list source-name
+                                 line
+                                 column 
+                                 position 
+                                 (- following-position
+                                    position))))]
+         [(#\])
+          eof])])))
+
+;; parse-exprs: input-port -> (listof syntax)
+;; Parse a list of expressions.
+(define (parse-exprs source-name in)
+  (let ([next-expr (parse-expr source-name in)])
+    (cond
+      [(eof-object? next-expr)
+       empty]
+      [else
+       (cons next-expr (parse-exprs source-name in))])))
 }|}
+The parser isn't anything too tricky, although there's a little bit of 
+messiness because it needs to handle brackets recursively.  That part
+is supposed to be a little messy anyway, since it's the capstone that builds tree structure out
+of a linear character stream.  (If we were using a parenthesized language, we
+could simply use @racket[read-syntax], but the whole point is to deal
+with the messiness of the surface syntax!)
+
+Let's see if this parser does anything useful:
+@interaction[#:eval my-evaluator
+                    (define my-sample-input-port (open-input-string ",[.,]"))
+                    (define first-stx
+                      (parse-expr "my-sample-program.rkt" my-sample-input-port))
+                    first-stx
+                    (define second-stx
+                      (parse-expr "my-sample-program.rkt" my-sample-input-port))
+                    second-stx
+                    (parse-expr "my-sample-program.rkt" my-sample-input-port)]
+Good!  So we're able to parse syntax objects out of an input stream.
+@interaction[#:eval my-evaluator
+                    (syntax->datum second-stx)
+                    (syntax-source second-stx)
+                    (syntax-position second-stx)
+                    (syntax-span second-stx)]
+And as we can see, we can explode the syntax object and look at its datum.  We should note
+that the parser is generating syntax objects that use the same names as the defined names we
+have in our @filepath{language.rkt} module language.  Yup, that's deliberate, and we'll see that in
+the next section.
+
+
+Also, each syntax object remembers where it came from, which in a more sophisticated language
+will let us give good error messages when Bad Things happen.  If we were more rigorous, we'd probably write unit tests for the parser as well with @racketmodname[rackunit], and
+make sure to produce good error messages when bad things happen (like unbalanced brackets or parentheses.
+@;; Yes, the unbalanced parentheses is a joke.
+
+
+
+But now that we've got the language and a parser, how do we tie them together?
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @section{Crossing the wires}
