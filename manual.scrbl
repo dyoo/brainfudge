@@ -137,10 +137,10 @@ on PLaneT with my username @tt{dyoo}.  You can
     @verbatim|{
    dyoo@thunderclap:~$ planet link dyoo bf.plt 1 0 bf
    }|
-Here, we're making a development link that will associate @racket[(planet dyoo/bf/...)] 
+Here, we're making a development link that will associate any module path of the form @racket[(planet dyoo/bf/...)] 
 to the @tt{bf} directory we made earlier.  Later on, when we create a package and upload it to PLaneT,
 we can drop this development link, and then references using @racket[(planet dyoo/bf/...)] will
-immediately switch over to the package on the PLaneT server.
+immediately switch over to the one on the PLaneT server.
 
 
 But does the link actually work?  Let's write a very simple module in our work directory, and
@@ -172,25 +172,26 @@ We want to teach Racket what it means when we say something like:
     #lang planet dyoo/bf
     ,[.,]
     }|
-    
-Programs in Racket get digested in a few stages; the process looks something like this:
+
+As mentioned earlier, a @litchar{#lang} line is quite active: it tells the Racket runtime how to
+convert from the surface syntax to an meaningful program.  Programs in Racket get digested
+in a few stages; the process looks something like this:
 
 @verbatim|{
                      reader          macro expansion
     surface syntax ----------> AST ------------------>  core forms
     }|
 
-As mentioned earlier, a @litchar{#lang} line is quite active: it tells the Racket runtime how to
-convert from the surface syntax to an abstract tree representation (AST).  The AST will be annotated
-so that Racket knows how to make sense out of the tree.
-
 When Racket sees
 @litchar{#lang planet dyoo/bf}, it'll look for a module called @tt{lang/reader.rkt} in our @tt{bf}
 directory; the contents of a reader module will drive the rest of the process, consuming surface syntax
-and excreting ASTs.  After this point, the rest of the Racket infrastructure will kick in and macro-expand out
+and excreting ASTs.
+These AST will be annotated so that Racket knows how to make sense out of them later on.
+At this point, the rest of the Racket infrastructure kicks in and macro-expands out ultimately
 to a @link["http://docs.racket-lang.org/reference/syntax-model.html#(part._fully-expanded)"]{core} language.
 
-Here's what we'll do:
+
+So here's what we'll do:
 @itemlist[
     @item{Capture the meaning of @tt{brainf*ck} by writing a semantics module.}
     @item{Write a parser module to go from the line noise of the surface syntax into a more structured form.}
@@ -203,10 +204,163 @@ Here's what we'll do:
 @section{The @tt{brainf*ck} language}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Talk about the semantics of @tt{brainf*ck}, code it up, and write test cases
-to make sure we're doing the right thing.
+When we look at the definition of @link["http://en.wikipedia.org/wiki/Brainf*ck"]{@tt{brainf*ck}},
+it's actually not too bad.  There's two bits of state,
+@itemlist[
+          @item{a byte array of data, and}
+          @item{a pointer into that data array}
+          ]
+and it has only a few operations that affect this state:
+@itemlist[
+          @item{Increment the data pointer (@litchar{>})}
+          @item{Decrement the data pointer (@litchar{<})}
+          @item{Increment the byte at the data pointer (@litchar{+})}
+          @item{Decrement the byte at the data pointer (@litchar{-})}
+          @item{Write a byte to standard output (@litchar{.})}
+          @item{Read a byte from standard output (@litchar{,})}
+          @item{Perform a loop until the byte at the data pointer is zero (@litchar{[}, @litchar{]})}
+          ]
+Let's write a module that lets us play with such a system: let's call it @filepath{semantics.rkt}.
+           
+@filebox["semantics.rkt"]{
+                          @codeblock|{
+#lang racket
 
-Use the language with the s-exp reader.
+(require rackunit)                ;; for unit testing
+(provide (all-defined-out))
+
+
+;; Our state contains two pieces.
+(define-struct state (data ptr)
+  #:mutable)
+
+;; Creates a new state, with a byte array of 30000 zeros, and
+;; the pointer at index 0.
+(define (new-state) 
+  (make-state (make-vector 30000 0)
+              0))
+
+;; increment the data pointer
+(define (increment-ptr a-state)
+  (set-state-ptr! a-state (add1 (state-ptr a-state))))
+
+;; decrement the data pointer
+(define (decrement-ptr a-state)
+  (set-state-ptr! a-state (sub1 (state-ptr a-state))))
+
+;; increment the byte at the data pointer
+(define (increment-byte a-state)
+  (let ([v (state-data a-state)]
+        [i (state-ptr a-state)])
+    (vector-set! v i (add1 (vector-ref v i)))))
+
+;; decrement the byte at the data pointer
+(define (decrement-byte a-state)
+  (let ([v (state-data a-state)]
+        [i (state-ptr a-state)])
+    (vector-set! v i (sub1 (vector-ref v i)))))
+
+;; print the byte at the data pointer
+(define (write-byte-to-stdout a-state)
+  (let ([v (state-data a-state)]
+        [i (state-ptr a-state)])
+    (write-byte (vector-ref v i) (current-output-port))))
+
+;; read a byte from stdin into the data pointer
+(define (read-byte-from-stdin a-state)
+  (let ([v (state-data a-state)]
+        [i (state-ptr a-state)])
+    (vector-set! v i (read-byte (current-input-port)))))
+
+
+;; we know how to do loops!
+(define-syntax-rule (loop a-state body ...)
+  (let loop ()
+    (unless (= (vector-ref (state-data a-state)
+                           (state-ptr a-state))
+               0)
+      body ...
+      (loop))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Some tests follow:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+;; Simple exercises.
+(let ([s (new-state)])
+  (increment-byte s)
+  (check-equal? 1 (vector-ref (state-data s) 0))
+  (increment-byte s)
+  (check-equal? 2 (vector-ref (state-data s) 0))
+  (decrement-byte s)
+  (check-equal? 1 (vector-ref (state-data s) 0)))
+
+;; pointer movement
+(let ([s (new-state)])
+  (increment-ptr s)
+  (increment-byte s)
+  (check-equal? 0 (vector-ref (state-data s) 0))
+  (check-equal? 1 (vector-ref (state-data s) 1))
+  (decrement-ptr s)
+  (increment-byte s)
+  (check-equal? 1 (vector-ref (state-data s) 0))
+  (check-equal? 1 (vector-ref (state-data s) 1)))
+
+;; make sure standard input is doing something
+(let ([s (new-state)])
+  (parameterize ([current-input-port 
+                  (open-input-bytes (bytes 3 1 4))])
+    (read-byte-from-stdin s)
+    (increment-ptr s)
+    (read-byte-from-stdin s)
+    (increment-ptr s)
+    (read-byte-from-stdin s))
+  (check-equal? 3 (vector-ref (state-data s) 0))
+  (check-equal? 1 (vector-ref (state-data s) 1))
+  (check-equal? 4 (vector-ref (state-data s) 2)))
+
+
+;; make sure standard output is doing something
+(let ([s (new-state)])
+  (set-state-data! s (vector 80 76 84))
+  (let ([simulated-stdout (open-output-string)])
+    (parameterize ([current-output-port simulated-stdout])
+      (write-byte-to-stdout s)
+      (increment-ptr s)
+      (write-byte-to-stdout s)
+      (increment-ptr s)
+      (write-byte-to-stdout s))
+    (check-equal? "PLT" (get-output-string simulated-stdout))))
+
+
+;; Let's see that we can clear.
+(let ([s (new-state)])
+  (set-state-data! s (vector 0 29 92 14 243 1 6 92))
+  (set-state-ptr! s 7)
+  ;; [ [-] < ]
+  (loop s 
+        (loop s (decrement-byte s))
+        (decrement-ptr s))
+  
+  (check-equal? 0 (state-ptr s))
+  (check-equal? (vector 0 0 0 0 0 0 0 0) (state-data s)))                                     
+                                       }|
+                           }
+                                                                                              
+Ok, that wasn't too bad.  We've used the @racketmodname[rackunit] unit-testing
+framework to make sure 
+our definitions are doing something reasonable, and all the tests should pass.
+
+However, there are a few things that we may want to fix in
+the future, like the lack
+of error trapping if the input stream contains @racket[eof].  And there's no bounds-checking
+on ptr or on the values in the data.  Wow, there are quite a few things that we might want
+to fix.
+
+At the very least, we now have a module that captures the semantics of @tt{brainf*ck}.  Now
+let's get a parser started.
 
 
 
