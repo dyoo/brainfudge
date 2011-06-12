@@ -123,19 +123,44 @@ into Racket from scratch.
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @section{Flight preparations}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-Let's first make a work directory where we'll keep everything.
+Since we're starting from scratch, let's first make a work directory
+where we'll keep our source code.  I'll call the directory @tt{bf}, but you can use
+whatever name you want.
+    @verbatim|{
+    dyoo@thunderclap:~$ mkdir bf
+    }|
 
-[create a directory]
+Ultimately, we want to put the fruit of our labor onto @link["http://docs.racket-lang.org/planet/index.html"]{PLaneT},
+since that'll make it easier for others to use our work.
+Let's set up a @link["http://docs.racket-lang.org/planet/Developing_Packages_for_PLaneT.html#(part._devlinks)"]{PLaneT development link} so the Racket environment knows about our work directory.  I already have an account
+on PLaneT with my username @tt{dyoo}.  You can
+@link["http://planet.racket-lang.org/add.ss"]{get an account} fairly easily.
+    @verbatim|{
+   dyoo@thunderclap:~$ planet link dyoo bf.plt 1 0 bf
+   }|
+Here, we're making a development link that will associate @racket[(planet dyoo/bf/...)] 
+to the @tt{bf} directory we made earlier.  Later on, when we create a package and upload it to PLaneT,
+we can drop this development link, and then references using @racket[(planet dyoo/bf/...)] will
+immediately switch over to the package on the PLaneT server.
 
 
-Ultimately, we want to put the fruit of our labor onto PLaneT. 
-Let's set up a PLaneT development link so the Racket environment knows about our work directory.  
-
-[create a user account if necessary]
-
-[set up the planet development link.]
-
-[Make sure the development link is working.]
+But does the link actually work?  Let's write a very simple module in our work directory, and
+then see that Racket can find it through PLaneT.
+    @verbatim|{
+    dyoo@thunderclap:~$ cd bf
+    dyoo@thunderclap:~/bf$ cat >hello.rkt
+    #lang racket
+    "hello world"
+    }|
+Ok, let's see if Racket can find our magnificant @tt{hello.rkt} module if we use the PLaneTized version of the name. 
+    @verbatim|{
+    dyoo@thunderclap:~/bf$ racket
+    Welcome to Racket v5.1.1.
+    > (require (planet dyoo/bf/hello))
+    "hello world"
+    > 
+    }|
+If we get to this point, then we've got the PLaneT development link in place.
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
