@@ -478,7 +478,8 @@ What representation
 should we use for the tree?  Although we can use s-expressions, 
 they're pretty lossy: they don't record where they came from 
 in the original source text.  For the case of @tt{brainf*ck}, we might not care,
-but if we were to write a parser for a more professional, sophisticated language (like @link["http://lolcode.com/"]{LOLCODE}) we
+but if we were to write a parser for a more professional, 
+sophisticated language (like @link["http://lolcode.com/"]{LOLCODE}) we
 want source locations so we can give good error messages during parsing or run-time.
 
 As an alternative to plain s-expressions, we'll use a data structure built into Racket called a 
@@ -514,7 +515,9 @@ lexical-scoping information that we know about the datum, but in this case, we d
 any on hand, so we just give it @racket[#f].
 
 Ok, let's write a parser.  We'll write the following into @filepath{parser.rkt}.
-
+@filebox["parser.rkt"]{
+                          @codeblock|{
+}|}
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @section{Crossing the wires}
