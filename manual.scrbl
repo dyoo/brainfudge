@@ -217,7 +217,7 @@ and it has only a few operations that affect this state:
           @item{Increment the byte at the data pointer (@litchar{+})}
           @item{Decrement the byte at the data pointer (@litchar{-})}
           @item{Write a byte to standard output (@litchar{.})}
-          @item{Read a byte from standard output (@litchar{,})}
+          @item{Read a byte from standard input (@litchar{,})}
           @item{Perform a loop until the byte at the data pointer is zero (@litchar{[}, @litchar{]})}
           ]
 Let's write a module that lets us play with such a system: let's call it @filepath{semantics.rkt}.
@@ -360,22 +360,90 @@ on ptr or on the values in the data.  Wow, there are quite a few things that we 
 to fix.  But at the very least, we now have a module that captures the semantics of @tt{brainf*ck}.
 
 
-We might even be cheeky enough to insist that s-expressions are the only way to go, and
-that people write @tt{brainf*ck} programs with s-expressions.  We can, in fact, take that route.
+
+@section{Lisping a language}
+
+We might even be cheeky enough to insist that people write @tt{brainf*ck} programs with s-expressions.
+We can, in fact, take that route.
 We can create a @link["http://docs.racket-lang.org/guide/module-languages.html"]{module language}
-that uses our @filepath{semantics.rkt}.
+that uses our @filepath{semantics.rkt}.  Let's create such a module language in @filepath{language.rkt}.
+@filebox["language.rkt"]{
+                          @codeblock|{
+#lang racket
+(require "semantics.rkt")
+(provide greater-than
+         less-than
+         plus
+         minus
+         period
+         comma
+         brackets
+         #%module-begin)
 
-...
+(define *THE-STATE* (new-state))
+
+(define-syntax-rule (greater-than)
+  (increment-ptr *THE-STATE*))
+
+(define-syntax-rule (less-than)
+  (decrement-ptr *THE-STATE*))
+
+(define-syntax-rule (plus)
+  (increment-byte *THE-STATE*))
+
+(define-syntax-rule (minus)
+  (decrement-byte *THE-STATE*))
+
+(define-syntax-rule (period)
+  (write-byte-to-stdout *THE-STATE*))
+
+(define-syntax-rule (comma)
+  (read-byte-from-stdin *THE-STATE*))
+
+(define-syntax-rule (brackets body ...)
+  (loop *THE-STATE* body ...))
+}|}
 
 
-Once we have this, we can write @tt{brainf*ck} programs like this:
+This @filepath{language.rkt} uses the semantics we've coded up, and allows us to 
+write @tt{brainf*ck} programs in s-expressions, like this:
+@codeblock|{
+#lang s-exp (planet dyoo/bf/language)
+(plus)(plus)(plus)(plus)(plus) (plus)(plus)(plus)(plus)(plus)
+(brackets
+ (greater-than) (plus)(plus)(plus)(plus)(plus) (plus)(plus)
+ (greater-than) (plus)(plus)(plus)(plus)(plus) (plus)(plus)(plus)(plus)(plus)
+ (greater-than) (plus)(plus)(plus)
+ (greater-than) (plus)
+ (less-than)(less-than)(less-than)(less-than) (minus))           
+(greater-than) (plus)(plus) (period)
+(greater-than) (plus) (period)
+(plus)(plus)(plus)(plus)(plus) (plus)(plus) (period)
+(period)
+(plus)(plus)(plus) (period)
+(greater-than) (plus)(plus) (period)
+(less-than)(less-than) (plus)(plus)(plus)(plus)(plus)
+(plus)(plus)(plus)(plus)(plus) (plus)(plus)(plus)(plus)(plus) (period)
+(greater-than) (period)
+(plus)(plus)(plus) (period)
+(minus)(minus)(minus)(minus)(minus) (minus) (period)
+(minus)(minus)(minus)(minus)(minus) (minus)(minus)(minus) (period)
+(greater-than) (plus) (period)
+(greater-than) (period)
+}|
 
-...
+The @litchar{#lang} line here is saying, essentially, that the following program
+is written with s-expressions, and should be treated with the module language @filepath{language.rkt}
+that we just wrote up.  And if we run this program, we should see a familiar greeting.
 
 
-But of course we shouldn't just declare victory here.  We want to let people write @tt{brainf*ck}
-in the surface syntax that they deserve.  Let's get that parser working!
+... but of course we shouldn't just declare victory here.  We really do want
+to let people write @tt{brainf*ck} in the surface syntax that they deserve.
+Let's keep @filepath{language.rkt} on hand, though.  We will reuse it by having our
+parser transform the surface syntax into s-expressions.
 
+
+Let's get that parser working!
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @section{Parsing the surface syntax}
@@ -387,7 +455,7 @@ Write a quick-and-dirty parser.
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-@section{Lisping a language}
+@section{Crossing the wires}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 Make a module language that re-exports the semantics.  Use syntax/module-reader
