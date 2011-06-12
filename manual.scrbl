@@ -166,16 +166,37 @@ If we get to this point, then we've got the PLaneT development link in place.
 @section{The view from high orbit}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Quickly explain, at a high level, what we're going to do:
 
-[what happens with #lang?]
+We want to teach Racket what it means when we say something like:
+    @codeblock|{
+    #lang planet dyoo/bf
+    ,[.,]
+    }|
+    
+Programs in Racket get digested in a few stages; the process looks something like this:
 
-[readers] 
+@verbatim|{
+                     reader          macro expansion
+    surface syntax ----------> AST ------------------>  core forms
+    }|
 
-what the syntax/module-reader does for us,
+As mentioned earlier, a @litchar{#lang} line is quite active: it tells the Racket runtime how to
+convert from the surface syntax to an abstract tree representation (AST).  The AST will be annotated
+so that Racket knows how to make sense out of the tree.
 
-and what we're going to do: define the semantics, define the surface syntax,
-and connect those two in a language and reader.
+When Racket sees
+@litchar{#lang planet dyoo/bf}, it'll look for a module called @tt{lang/reader.rkt} in our @tt{bf}
+directory; the contents of a reader module will drive the rest of the process, consuming surface syntax
+and excreting ASTs.  After this point, the rest of the Racket infrastructure will kick in and macro-expand out
+to a @link["http://docs.racket-lang.org/reference/syntax-model.html#(part._fully-expanded)"]{core} language.
+
+Here's what we'll do:
+@itemlist[
+    @item{Capture the meaning of @tt{brainf*ck} by writing a semantics module.}
+    @item{Write a parser module to go from the line noise of the surface syntax into a more structured form.}
+    @item{Connect the pieces, the semantics and the surface syntax parser, by making a reader module.}
+    @item{Profit!}]
+
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
