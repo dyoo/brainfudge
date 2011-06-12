@@ -357,11 +357,24 @@ However, there are a few things that we may want to fix in
 the future, like the lack
 of error trapping if the input stream contains @racket[eof].  And there's no bounds-checking
 on ptr or on the values in the data.  Wow, there are quite a few things that we might want
-to fix.
+to fix.  But at the very least, we now have a module that captures the semantics of @tt{brainf*ck}.
 
-At the very least, we now have a module that captures the semantics of @tt{brainf*ck}.  Now
-let's get a parser started.
 
+We might even be cheeky enough to insist that s-expressions are the only way to go, and
+that people write @tt{brainf*ck} programs with s-expressions.  We can, in fact, take that route.
+We can create a @link["http://docs.racket-lang.org/guide/module-languages.html"]{module language}
+that uses our @filepath{semantics.rkt}.
+
+...
+
+
+Once we have this, we can write @tt{brainf*ck} programs like this:
+
+...
+
+
+But of course we shouldn't just declare victory here.  We want to let people write @tt{brainf*ck}
+in the surface syntax that they deserve.  Let's get that parser working!
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
