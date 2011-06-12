@@ -10,6 +10,15 @@
 @title{F*dging up a Racket}
 @author+email["Danny Yoo" "dyoo@cs.wpi.edu"]
 
+
+@;; I'll need an evaluator for some small examples.
+@(define my-evaluator
+   (parameterize ([sandbox-output 'string]
+                  [sandbox-error-output 'string])
+     (make-evaluator 'racket/base)))
+
+
+
 @section{Introduction}
 
 If people say that @link["http://racket-lang.org"]{Racket} is just a
@@ -19,7 +28,7 @@ that Racket is a @link["http://docs.racket-lang.org/guide/languages.html"]{langu
 languages.
 
 Is that really true?  Racket does include a nice
-@link["http://docs.racket-lang.org/guide/macros.html"]{macro} system ,
+@link["http://docs.racket-lang.org/guide/macros.html"]{macro} system,
 which allows a programmer to add in new language constructs.  For
 example, we can get while loops into Racket with relative ease:
     @codeblock{
@@ -123,7 +132,7 @@ into Racket from scratch.
 @section{Flight preparations}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Since we're starting from scratch, let's first make a work directory
-where we'll keep our source code.  I'll call the directory @tt{bf}, but you can use
+where we'll keep our source code.  I'll call the directory @filepath{bf/}, but you can use
 whatever name you want.
     @verbatim|{
     dyoo@thunderclap:~$ mkdir bf
@@ -134,12 +143,14 @@ since that'll make it easier for others to use our work.
 Let's set up a @link["http://docs.racket-lang.org/planet/Developing_Packages_for_PLaneT.html#(part._devlinks)"]{PLaneT development link} so the Racket environment knows about our work directory.  I already have an account
 on PLaneT with my username @tt{dyoo}.  You can
 @link["http://planet.racket-lang.org/add.ss"]{get an account} fairly easily.
-    @verbatim|{
+
+If we enter the following at the command line,
+@verbatim|{
    dyoo@thunderclap:~$ planet link dyoo bf.plt 1 0 bf
    }|
-Here, we're making a development link that will associate any module path of the form @racket[(planet dyoo/bf/...)] 
-to the @tt{bf} directory we made earlier.  Later on, when we create a package and upload it to PLaneT,
-we can drop this development link, and then references using @racket[(planet dyoo/bf/...)] will
+we'll make a development link that will associate any module path of the form @racket[(planet dyoo/bf/...)] 
+to our local @filepath{bf/} directory.  Later on, when we create a package and upload it to PLaneT,
+we can drop this development link, and then all the references that use @racket[(planet dyoo/bf/...)] will
 immediately switch over to the one on the PLaneT server.
 
 
@@ -151,7 +162,7 @@ then see that Racket can find it through PLaneT.
     #lang racket
     "hello world"
     }|
-Ok, let's see if Racket can find our magnificant @tt{hello.rkt} module if we use the PLaneTized version of the name. 
+Ok, let's see if Racket can find our magnificant @filepath{hello.rkt} module if we use the PLaneTized version of the name. 
     @verbatim|{
     dyoo@thunderclap:~/bf$ racket
     Welcome to Racket v5.1.1.
@@ -356,7 +367,7 @@ our definitions are doing something reasonable, and all the tests should pass.
 However, there are a few things that we may want to fix in
 the future, like the lack
 of error trapping if the input stream contains @racket[eof].  And there's no bounds-checking
-on ptr or on the values in the data.  Wow, there are quite a few things that we might want
+on the @racket[ptr] or on the values in the data.  Wow, there are quite a few things that we might want
 to fix.  But at the very least, we now have a module that captures the semantics of @tt{brainf*ck}.
 
 
@@ -364,8 +375,7 @@ to fix.  But at the very least, we now have a module that captures the semantics
 @section{Lisping a language}
 
 We might even be cheeky enough to insist that people write @tt{brainf*ck} programs with s-expressions.
-We can, in fact, take that route.
-We can create a @link["http://docs.racket-lang.org/guide/module-languages.html"]{module language}
+We can take that route, and create a @link["http://docs.racket-lang.org/guide/module-languages.html"]{module language}
 that uses our @filepath{semantics.rkt}.  Let's create such a module language in @filepath{language.rkt}.
 @filebox["language.rkt"]{
                           @codeblock|{
@@ -405,8 +415,14 @@ that uses our @filepath{semantics.rkt}.  Let's create such a module language in 
 }|}
 
 
-This @filepath{language.rkt} uses the semantics we've coded up, and allows us to 
-write @tt{brainf*ck} programs in s-expressions, like this:
+This @filepath{language.rkt} presents @tt{brainf*ck} as a s-expression language.  It uses the semantics we've coded up, and defines rules for handling
+@racket[greater-than], @racket[less-than], etc...  The @racket[#%module-begin] thing
+is an @link["http://docs.racket-lang.org/guide/module-languages.html#(part._implicit-forms)"]{implicit form}
+that an module language needs to provide,
+but we'll just borrow the one that comes from @racketmodname[racket].
+
+Once we've written @filepath{language.rkt}, we can use the language
+like this:
 @codeblock|{
 #lang s-exp (planet dyoo/bf/language)
 (plus)(plus)(plus)(plus)(plus) (plus)(plus)(plus)(plus)(plus)
@@ -435,6 +451,7 @@ write @tt{brainf*ck} programs in s-expressions, like this:
 The @litchar{#lang} line here is saying, essentially, that the following program
 is written with s-expressions, and should be treated with the module language @filepath{language.rkt}
 that we just wrote up.  And if we run this program, we should see a familiar greeting.
+Hurrah!
 
 
 ... but of course we shouldn't just declare victory here.  We really do want
@@ -449,9 +466,54 @@ Let's get that parser working!
 @section{Parsing the surface syntax}
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-Write a quick-and-dirty parser.
-[Just use simple code for this; don't use parser-tools yet.]
+The Racket toolchain includes a professional-strength lexer and parser
+in the @link["http://docs.racket-lang.org/parser-tools/index.html"]{parser-tools} collection.
+For the sake of keeping this example simple, we'll
+write a simple recursive-descent parser without using parser-tools.  (But if our surface
+syntax were any more complicated, we might reconsider this decision.)  The input to our parser will be an @link["http://docs.racket-lang.org/reference/ports.html"]{input-port},
+from which we can read in bytes.
+The expected output should be some kind of abstract syntax tree.
 
+What representation
+should we use for the tree?  Although we can use s-expressions, 
+they're pretty lossy: they don't record where they came from 
+in the original source text.  For the case of @tt{brainf*ck}, we might not care,
+but if we were to write a parser for a more professional, sophisticated language (like @link["http://lolcode.com/"]{LOLCODE}) we
+want source locations so we can give good error messages during parsing or run-time.
+
+As an alternative to plain s-expressions, we'll use a data structure built into Racket called a 
+@link["http://docs.racket-lang.org/guide/stx-obj.html"]{syntax object}; syntax objects let
+us represent ASTs---just like s-expressions---and they also carry along auxiliary
+information, such as source locations.  (Plus, they're the native data structure that Racket
+itself uses during macro expansion, so we might as well use them ourselves.)
+
+For example,
+@interaction[#:eval my-evaluator 
+                 (define an-example-syntax-object
+                   (datum->syntax #f 'hello (list "hello.rkt"
+                                                  1
+                                                  20
+                                                  32
+                                                  5)))
+                                                      
+                 an-example-syntax-object
+                 (syntax? an-example-syntax-object)
+                 (syntax->datum an-example-syntax-object)
+                 (symbol? (syntax->datum an-example-syntax-object))
+                 ]
+This object remembers that it was on line 1, column 20, position 32, and was five characters
+long.  We can query this:
+@interaction[#:eval my-evaluator 
+                 (syntax-line an-example-syntax-object)
+                 (syntax-column an-example-syntax-object)
+                 (syntax-position an-example-syntax-object)
+                 (syntax-span an-example-syntax-object)
+                 ]
+The first argument that we pass into @racket[datum->syntax] lets us tells Racket any
+lexical-scoping information that we know about the datum, but in this case, we don't have
+any on hand, so we just give it @racket[#f].
+
+Ok, let's write a parser.  We'll write the following into @filepath{parser.rkt}.
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
