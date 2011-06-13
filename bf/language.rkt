@@ -9,29 +9,38 @@
          period
          comma
          brackets
-         #%module-begin)
+         (rename-out [my-module-begin #%module-begin]))
 
-(define *THE-STATE* (new-state))
+;; The current-state is a parameter used by
+;; the rest of the language.
+(define current-state (make-parameter (new-state)))
+
+;; Every module in this language will make sure that it
+;; uses a fresh state.
+(define-syntax-rule (my-module-begin body ...)
+  (#%plain-module-begin
+   (parameterize ([current-state (new-state)])
+     body ...)))
 
 (define-syntax-rule (greater-than)
-  (increment-ptr *THE-STATE*))
+  (increment-ptr (current-state)))
 
 (define-syntax-rule (less-than)
-  (decrement-ptr *THE-STATE*))
+  (decrement-ptr (current-state)))
 
 (define-syntax-rule (plus)
-  (increment-byte *THE-STATE*))
+  (increment-byte (current-state)))
 
 (define-syntax-rule (minus)
-  (decrement-byte *THE-STATE*))
+  (decrement-byte (current-state)))
 
 (define-syntax-rule (period)
-  (write-byte-to-stdout *THE-STATE*))
+  (write-byte-to-stdout (current-state)))
 
 (define-syntax-rule (comma)
-  (read-byte-from-stdin *THE-STATE*))
+  (read-byte-from-stdin (current-state)))
 
 (define-syntax-rule (brackets body ...)
-  (loop *THE-STATE* body ...))
+  (loop (current-state) body ...))
 
 

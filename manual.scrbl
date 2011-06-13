@@ -15,7 +15,7 @@
 @(define my-evaluator
    (parameterize ([sandbox-output 'string]
                   [sandbox-error-output 'string])
-     (make-evaluator 'racket/base
+     (make-evaluator 'racket
                      #:requires
                      (list (resolve-planet-path 
                             `(planet dyoo/bf/parser))))))
@@ -128,7 +128,48 @@ can easily play with it.
 
 Ignoring the question of @emph{why?!!} someone would do this, let's ask another:
 how do we build this?  This tutorial will cover how to build this language
-into Racket from scratch.
+into Racket from scratch.  
+
+
+Let's get started!
+
+
+@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+@section{The view from high orbit}
+@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+We want to teach Racket what it means when we say something like:
+    @codeblock|{
+    #lang planet dyoo/bf
+    ,[.,]
+    }|
+
+As mentioned earlier, a @litchar{#lang} line is quite active: it tells the Racket runtime how to
+convert from the surface syntax to an meaningful program.  Programs in Racket get digested
+in a few stages; the process looks something like this:
+
+@verbatim|{
+                     reader        macro expansion
+    surface syntax ---------> AST -----------------> core forms
+    }|
+
+When Racket sees
+@litchar{#lang planet dyoo/bf}, it will look for a particular module that we call a @emph{reader};
+a reader consumes surface syntax and excretes ASTs, and these ASTs are then
+annotated so that Racket knows how to make sense out of them later on.
+At this point, the rest of the Racket infrastructure kicks in and macro-expands the ASTs out, ultimately,
+to a @link["http://docs.racket-lang.org/reference/syntax-model.html#(part._fully-expanded)"]{core} language.
+
+
+So here's what we'll do:
+@itemlist[
+    @item{Capture the meaning of @tt{brainf*ck} by writing a semantics module.}
+    @item{Go from the line noise of the surface syntax into a more structured form 
+          by writing a parser module.}
+    @item{Connect the pieces, the semantics and the surface syntax parser,
+          by making a reader module.}
+    @item{Profit!}]
+
 
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -176,41 +217,6 @@ Ok, let's see if Racket can find our magnificant @filepath{hello.rkt} module if 
 If we get to this point, then we've got the PLaneT development link in place.
 
 
-@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-@section{The view from high orbit}
-@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-We want to teach Racket what it means when we say something like:
-    @codeblock|{
-    #lang planet dyoo/bf
-    ,[.,]
-    }|
-
-As mentioned earlier, a @litchar{#lang} line is quite active: it tells the Racket runtime how to
-convert from the surface syntax to an meaningful program.  Programs in Racket get digested
-in a few stages; the process looks something like this:
-
-@verbatim|{
-                     reader          macro expansion
-    surface syntax ----------> AST ------------------>  core forms
-    }|
-
-When Racket sees
-@litchar{#lang planet dyoo/bf}, it'll look for a module called @tt{lang/reader.rkt} in our @tt{bf}
-directory; the contents of a reader module will drive the rest of the process, consuming surface syntax
-and excreting ASTs.
-These AST will be annotated so that Racket knows how to make sense out of them later on.
-At this point, the rest of the Racket infrastructure kicks in and macro-expands out ultimately
-to a @link["http://docs.racket-lang.org/reference/syntax-model.html#(part._fully-expanded)"]{core} language.
-
-
-So here's what we'll do:
-@itemlist[
-    @item{Capture the meaning of @tt{brainf*ck} by writing a semantics module.}
-    @item{Write a parser module to go from the line noise of the surface syntax into a more structured form.}
-    @item{Connect the pieces, the semantics and the surface syntax parser, by making a reader module.}
-    @item{Profit!}]
 
 
 
@@ -295,13 +301,13 @@ Let's write a module that lets us play with such a system: let's call it @filepa
                0)
       body ...
       (loop))))
+}|}
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Some tests follow:
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-
+Ok, that doesn't seem too bad.  But of course, we should test this; let's use
+the @racketmodname{rackunit} unit testing framework and tickle this code.  Let's add
+a little more to the end of @filepath{semantics.rkt}.
+@filebox["semantics.rkt"]{
+@codeblock|{           
 ;; Simple exercises.
 (let ([s (new-state)])
   (increment-byte s)
@@ -360,12 +366,11 @@ Let's write a module that lets us play with such a system: let's call it @filepa
   
   (check-equal? 0 (state-ptr s))
   (check-equal? (vector 0 0 0 0 0 0 0 0) (state-data s)))                                     
-                                       }|
-                           }
+}|}
                                                                                               
-Ok, that wasn't too bad.  We've used the @racketmodname[rackunit] unit-testing
-framework to make sure 
-our definitions are doing something reasonable, and all the tests should pass.
+Good!  Our tests, at the very least, let us know that our definitions are
+doing something reasonable, and they should all pass.
+
 
 However, there are a few things that we may want to fix in
 the future, like the lack
@@ -383,7 +388,9 @@ that uses our @filepath{semantics.rkt}.  Let's create such a module language in 
 @filebox["language.rkt"]{
                           @codeblock|{
 #lang racket
+
 (require "semantics.rkt")
+
 (provide greater-than
          less-than
          plus
@@ -391,38 +398,74 @@ that uses our @filepath{semantics.rkt}.  Let's create such a module language in 
          period
          comma
          brackets
-         #%module-begin)
+         (rename-out [my-module-begin #%module-begin]))
 
-(define *THE-STATE* (new-state))
+;; The current-state is a parameter used by the
+;; rest of this language.
+(define current-state (make-parameter (new-state)))
+
+;; Every module in this language will make sure that it
+;; uses a fresh state.
+(define-syntax-rule (my-module-begin body ...)
+  (#%plain-module-begin
+    (parameterize ([current-state (new-state)])
+       body ...)))
 
 (define-syntax-rule (greater-than)
-  (increment-ptr *THE-STATE*))
+  (increment-ptr (current-state)))
 
 (define-syntax-rule (less-than)
-  (decrement-ptr *THE-STATE*))
+  (decrement-ptr (current-state)))
 
 (define-syntax-rule (plus)
-  (increment-byte *THE-STATE*))
+  (increment-byte (current-state)))
 
 (define-syntax-rule (minus)
-  (decrement-byte *THE-STATE*))
+  (decrement-byte (current-state)))
 
 (define-syntax-rule (period)
-  (write-byte-to-stdout *THE-STATE*))
+  (write-byte-to-stdout (current-state)))
 
 (define-syntax-rule (comma)
-  (read-byte-from-stdin *THE-STATE*))
+  (read-byte-from-stdin (current-state)))
 
 (define-syntax-rule (brackets body ...)
-  (loop *THE-STATE* body ...))
+  (loop (current-state) body ...))
 }|}
 
 
-This @filepath{language.rkt} presents @tt{brainf*ck} as a s-expression language.  It uses the semantics we've coded up, and defines rules for handling
-@racket[greater-than], @racket[less-than], etc...  The @racket[#%module-begin] thing
-is an @link["http://docs.racket-lang.org/guide/module-languages.html#(part._implicit-forms)"]{implicit form}
-that an module language needs to provide,
-but we'll just borrow the one that comes from @racketmodname[racket].
+This @filepath{language.rkt} presents @tt{brainf*ck} as a s-expression-based language.
+It uses the semantics we've coded up, and defines rules for handling
+@racket[greater-than], @racket[less-than], etc...  We have a parameter called @racket[current-state]
+that holds the state of the @tt{brainf*ck} machine that's used through the language.
+
+There's one piece of this language that looks particularly mysterious: what's the @racket[#%module-begin] form,
+and what is it doing?  In Racket, every
+module has an implicit @racket[#%module-begin] that wraps around the entirety of the module's body.
+We can see this by asking Racket to show us the results of the expansion process;
+here's a small example to demonstrate.
+@interaction[#:eval my-evaluator
+                    (syntax->datum
+                     (expand '(module an-example-module '#%kernel
+                                "hello"
+                                "world")))
+                    ]
+Ignore, for the moment, the use of @racket[syntax->datum] or the funky use of @racket['#%kernel].
+What we should notice
+is that Racket has added in that @racket[#%module-begin] around the @racket["hello"] and @racket["world"].
+So there's the implicit wrapping that Racket is doing.
+
+It turns out that @racket[#%module-begin] can be really useful!  In particular,
+we want to guarantee that every module written in @tt{brainf*ck} runs under a fresh state.  If 
+we had two @tt{brainf*ck} programs running, say like this:
+@racketblock[(require "my-first-bf-program.rkt")
+             (require "my-second-bf-program.rkt")]
+then it would be a shame to have the two programs clash just because they corrupted each other's data!
+By defining our own @racket[#%module-begin], we can ensure that each module has
+its own fresh version of the state, and our definition of @racket[my-module-begin] 
+does this for us.
+
+
 
 Once we've written @filepath{language.rkt}, we can use the language
 like this:
