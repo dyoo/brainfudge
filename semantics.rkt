@@ -44,7 +44,10 @@
 (define (read-byte-from-stdin a-state)
   (let ([v (state-data a-state)]
         [i (state-ptr a-state)])
-    (vector-set! v i (read-byte (current-input-port)))))
+    (vector-set! v i (let ([v (read-byte (current-input-port))])
+                       (if (eof-object? v)
+                           0
+                           v)))))
 
 
 ;; we know how to do loops!

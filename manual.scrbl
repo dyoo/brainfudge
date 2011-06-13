@@ -540,7 +540,7 @@ For example,
                                                   20
                                                   32
                                                   5)))]
-The first argument that we pass into @racket[datum->syntax] lets us tells Racket any
+The first argument that we pass into @racket[datum->syntax] lets us tell Racket any
 lexical-scoping information that we know about the datum, but in this case, we don't have
 any on hand, so we just give it @racket[#f].  Let's look at the structure of this syntax object.
 @interaction[#:eval my-evaluator                                                      
@@ -767,7 +767,25 @@ $ ls -l bf.plt
            }|
 
 There are a few warnings, because we haven't defined an @filepath{info.rkt} which provides metadata
-about our package.  Good, diligent citizens would  @link["http://docs.racket-lang.org/planet/Developing_Packages_for_PLaneT.html#(part._.Create_an__info_rkt__.File__.Optional_)"]{do so}.
+about our package.  Good, diligent citizens would  @link["http://docs.racket-lang.org/planet/Developing_Packages_for_PLaneT.html#(part._.Create_an__info_rkt__.File__.Optional_)"]{write an @filepath{info.rkt} file}, so let's write one.
+@filebox["info.rkt"]{
+@codeblock|{
+#lang setup/infotab
+(define name "bf: a brainf*ck compiler for Racket")
+(define categories '(devtools))
+(define can-be-loaded-with 'all)
+(define required-core-version "5.1.1")
+(define version "1.0")
+(define repositories '("4.x"))
+(define scribblings '())
+(define primary-file "language.rkt")
+(define blurb 
+  '("Provides support for the brainf*ck language."))
+(define release-notes
+  '((p "First release")))
+            }|}
+
+
 
 
 Before we upload the package, let's make sure the @filepath{bf.plt} package works for us locally.  We'll simulate an installation.  First, let's break the development link.
