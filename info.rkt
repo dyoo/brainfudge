@@ -3,7 +3,7 @@
 (define categories '(devtools))
 (define can-be-loaded-with 'all)
 (define required-core-version "5.1.1")
-(define version "1.4")
+(define version "1.5")
 (define repositories '("4.x"))
 (define scribblings '(("manual.scrbl" () (getting-started))))
 (define primary-file "language.rkt")
