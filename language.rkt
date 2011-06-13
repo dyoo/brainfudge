@@ -22,11 +22,28 @@
    (parameterize ([current-state (new-state)])
      body ...)))
 
-(define-syntax-rule (greater-than)
-  (increment-ptr (current-state)))
 
-(define-syntax-rule (less-than)
-  (decrement-ptr (current-state)))
+;; In order to produce good runtime error messages
+;; for greater-than and less-than, we latch onto 
+;; the syntax object for dear life, since it has
+;; information about where it came from in the
+;; source syntax.
+;;
+;; The #'#,stx nonsense below allows us to pass the
+;; syntax object.  The semantics can then raise an
+;; appropriate syntactic error with raise-syntax-error
+;; if it sees anything bad happen at runtime.
+(define-syntax (greater-than stx)
+  (syntax-case stx ()
+    [(_)
+     (quasisyntax/loc stx
+       (increment-ptr (current-state) #'#,stx))]))
+
+(define-syntax (less-than stx)
+  (syntax-case stx ()
+    [(_)
+     (quasisyntax/loc stx
+       (decrement-ptr (current-state) #'#,stx))]))
 
 (define-syntax-rule (plus)
   (increment-byte (current-state)))
@@ -42,5 +59,3 @@
 
 (define-syntax-rule (brackets body ...)
   (loop (current-state) body ...))
-
-

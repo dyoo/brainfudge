@@ -14,34 +14,53 @@
   (make-state (make-vector 30000 0)
               0))
 
+;; state-ptr-out-of-range?: state -> boolean
+;; Produces true if the pointer went off the data array.
+(define (state-ptr-out-of-range? a-state)
+  (or (>= (state-ptr a-state)
+          (vector-length (state-data a-state)))
+      (< (state-ptr a-state) 0)))
+
+
+;; Check to see if we've gone out of range.  If we have a useful stx
+;; to blame, use that syntax to highlight on screen.
+(define (detect-range-errors! a-state caller-name stx)
+  (when (state-ptr-out-of-range? a-state)
+    (if stx
+        (raise-syntax-error #f "pointer went out of range of data" stx)
+        (error caller-name "pointer went out of range of data"))))
+
+
 ;; increment the data pointer
-(define (increment-ptr a-state)
-  (set-state-ptr! a-state (add1 (state-ptr a-state))))
+(define (increment-ptr a-state [stx #f])
+  (set-state-ptr! a-state (add1 (state-ptr a-state)))
+  (detect-range-errors! a-state 'increment-ptr stx))
 
 ;; decrement the data pointer
-(define (decrement-ptr a-state)
-  (set-state-ptr! a-state (sub1 (state-ptr a-state))))
+(define (decrement-ptr a-state [stx #f])
+  (set-state-ptr! a-state (sub1 (state-ptr a-state)))
+  (detect-range-errors! a-state 'decrement-ptr stx))
 
 ;; increment the byte at the data pointer
-(define (increment-byte a-state)
+(define (increment-byte a-state [stx #f])
   (let ([v (state-data a-state)]
         [i (state-ptr a-state)])
     (vector-set! v i (add1 (vector-ref v i)))))
 
 ;; decrement the byte at the data pointer
-(define (decrement-byte a-state)
+(define (decrement-byte a-state [stx #f])
   (let ([v (state-data a-state)]
         [i (state-ptr a-state)])
     (vector-set! v i (sub1 (vector-ref v i)))))
 
 ;; print the byte at the data pointer
-(define (write-byte-to-stdout a-state)
+(define (write-byte-to-stdout a-state [stx #f])
   (let ([v (state-data a-state)]
         [i (state-ptr a-state)])
     (write-byte (vector-ref v i) (current-output-port))))
 
 ;; read a byte from stdin into the data pointer
-(define (read-byte-from-stdin a-state)
+(define (read-byte-from-stdin a-state [stx #f])
   (let ([v (state-data a-state)]
         [i (state-ptr a-state)])
     (vector-set! v i (let ([v (read-byte (current-input-port))])
