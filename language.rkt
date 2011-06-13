@@ -20,7 +20,7 @@
 (define-syntax-rule (my-module-begin body ...)
   (#%plain-module-begin
    (parameterize ([current-state (new-state)])
-     body ...)))
+     (begin body ... (void)))))
 
 
 ;; In order to produce good runtime error messages
