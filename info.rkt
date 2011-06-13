@@ -5,7 +5,7 @@
 (define required-core-version "5.1.1")
 (define version "1.2")
 (define repositories '("4.x"))
-(define scribblings '())
+(define scribblings '(("manual.scrbl")))
 (define primary-file "language.rkt")
 (define blurb 
   '("Provides support for the brainf*ck language."))
