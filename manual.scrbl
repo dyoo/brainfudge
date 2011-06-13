@@ -383,8 +383,8 @@ to fix.  But at the very least, we now have a module that captures the semantics
 @section{Lisping a language}
 
 We might even be cheeky enough to insist that people write @tt{brainf*ck} programs with s-expressions.
-We can take that route, and create a @link["http://docs.racket-lang.org/guide/module-languages.html"]{module language}
-that uses our @filepath{semantics.rkt}.  Let's create such a module language in @filepath{language.rkt}.
+Let's take that route, and create a @link["http://docs.racket-lang.org/guide/module-languages.html"]{module language}
+that uses our @filepath{semantics.rkt}.  We'll create such a module language in @filepath{language.rkt}.
 @filebox["language.rkt"]{
                           @codeblock|{
 #lang racket
@@ -436,7 +436,7 @@ that uses our @filepath{semantics.rkt}.  Let's create such a module language in 
 
 This @filepath{language.rkt} presents @tt{brainf*ck} as a s-expression-based language.
 It uses the semantics we've coded up, and defines rules for handling
-@racket[greater-than], @racket[less-than], etc...  We have a parameter called @racket[current-state]
+@racket[greater-than], @racket[less-than], etc...  We have a @link["http://docs.racket-lang.org/guide/parameterize.html"]{parameter} called @racket[current-state]
 that holds the state of the @tt{brainf*ck} machine that's used through the language.
 
 There's one piece of this language that looks particularly mysterious: what's the @racket[#%module-begin] form,
@@ -460,8 +460,8 @@ we want to guarantee that every module written in @tt{brainf*ck} runs under a fr
 we had two @tt{brainf*ck} programs running, say like this:
 @racketblock[(require "my-first-bf-program.rkt")
              (require "my-second-bf-program.rkt")]
-then it would be a shame to have the two programs clash just because they corrupted each other's data!
-By defining our own @racket[#%module-begin], we can ensure that each module has
+then it would be a shame to have the two programs clash just because they @tt{brainf*ck}ed each other's data!
+By defining our own @racket[#%module-begin], we can ensure that each @tt{brainf*ck} module has
 its own fresh version of the state, and our definition of @racket[my-module-begin] 
 does this for us.
 
@@ -471,27 +471,26 @@ Once we've written @filepath{language.rkt}, we can use the language
 like this:
 @codeblock|{
 #lang s-exp (planet dyoo/bf/language)
+
 (plus)(plus)(plus)(plus)(plus) (plus)(plus)(plus)(plus)(plus)
 (brackets
  (greater-than) (plus)(plus)(plus)(plus)(plus) (plus)(plus)
- (greater-than) (plus)(plus)(plus)(plus)(plus) (plus)(plus)(plus)(plus)(plus)
- (greater-than) (plus)(plus)(plus)
- (greater-than) (plus)
- (less-than)(less-than)(less-than)(less-than) (minus))           
+ (greater-than) (plus)(plus)(plus)(plus)(plus) (plus)(plus)
+ (plus)(plus)(plus) (greater-than) (plus)(plus)(plus)
+ (greater-than) (plus) (less-than)(less-than)(less-than)
+ (less-than) (minus)) 
 (greater-than) (plus)(plus) (period)
 (greater-than) (plus) (period)
 (plus)(plus)(plus)(plus)(plus) (plus)(plus) (period)
-(period)
-(plus)(plus)(plus) (period)
+(period) (plus)(plus)(plus) (period)
 (greater-than) (plus)(plus) (period)
 (less-than)(less-than) (plus)(plus)(plus)(plus)(plus)
-(plus)(plus)(plus)(plus)(plus) (plus)(plus)(plus)(plus)(plus) (period)
-(greater-than) (period)
+(plus)(plus)(plus)(plus)(plus) (plus)(plus)(plus)(plus)(plus)
+(period) (greater-than) (period)
 (plus)(plus)(plus) (period)
-(minus)(minus)(minus)(minus)(minus) (minus) (period)
-(minus)(minus)(minus)(minus)(minus) (minus)(minus)(minus) (period)
-(greater-than) (plus) (period)
-(greater-than) (period)
+(minus)(minus)(minus)(minus)(minus)(minus)(period)
+(minus)(minus)(minus)(minus)(minus)(minus)(minus)(minus)
+(period)(greater-than) (plus) (period) (greater-than) (period)
 }|
 
 The @litchar{#lang} line here is saying, essentially, that the following program
@@ -500,10 +499,11 @@ that we just wrote up.  And if we run this program, we should see a familiar gre
 Hurrah!
 
 
-... but of course we shouldn't just declare victory here.  We really do want
-to let people write @tt{brainf*ck} in the surface syntax that they deserve.
-Let's keep @filepath{language.rkt} on hand, though.  We will reuse it by having our
-parser transform the surface syntax into s-expressions.
+... But wait!  We can't just declare victory here.  We really do want
+to allow the throngs of @tt{brainfu*ck} programmers to write @tt{brainf*ck} in the surface syntax that
+they deserve.
+Keep @filepath{language.rkt} on hand, though.  We will reuse it by having our
+parser transform the surface syntax into the forms we defined in @filepath{language.rkt}.
 
 
 Let's get that parser working!
@@ -518,11 +518,6 @@ For the sake of keeping this example terse, we'll
 write a simple @link["http://en.wikipedia.org/wiki/Recursive_descent_parser"]{recursive-descent parser} without using the parser-tools collection.  (But if our surface
 syntax were any more complicated, we might reconsider this decision.)
 
-
-Our parser will consume an @link["http://docs.racket-lang.org/reference/ports.html"]{input-port},
-from which we can read in bytes with @racket[read-byte], or find out where we are with @racket[port-next-location].  Our parser will also take in a @racket[source-name] parameter, which
-will be some string that names the source of the @racket[input-port].
-
 The expected output of a successful parse should be some kind of abstract syntax tree.  What representation
 should we use for the tree?  Although we can use s-expressions, 
 they're pretty lossy: they don't record where they came from 
@@ -533,9 +528,9 @@ want source locations so we can give good error messages during parsing or run-t
 
 As an alternative to plain s-expressions, we'll use a data structure built into Racket called a 
 @link["http://docs.racket-lang.org/guide/stx-obj.html"]{syntax object}; syntax objects let
-us represent ASTs---just like s-expressions---and they also carry along auxiliary
-information, such as source locations.  (Plus, they're the native data structure that Racket
-itself uses during macro expansion, so we might as well use them ourselves.)
+us represent ASTs, just like s-expressions, and they also carry along auxiliary
+information, such as source locations.  Plus, as we briefly saw in our play with @racket[expand], syntax objects are the native data structure that Racket
+itself uses during macro expansion, so we might as well use them ourselves.
 
 For example,
 @interaction[#:eval my-evaluator 
@@ -554,18 +549,22 @@ any on hand, so we just give it @racket[#f].  Let's look at the structure of thi
                  (syntax->datum an-example-syntax-object)
                  (symbol? (syntax->datum an-example-syntax-object))
                  ]
-So a syntax object is like an s-expression, and we can get the underlying datum with @racket[syntax->datum].
+So a syntax object is a wrapper around an s-expression, and we can get the underlying datum by using @racket[syntax->datum].
+Furthermore, this object remembers where it came from, and that it was on line 1, column 20, position 32, and was five characters long:
 @interaction[#:eval my-evaluator 
+                 (syntax-source an-example-syntax-object)
                  (syntax-line an-example-syntax-object)
                  (syntax-column an-example-syntax-object)
                  (syntax-position an-example-syntax-object)
                  (syntax-span an-example-syntax-object)
                  ]
-Furthermore, this object remembers that it was on line 1, column 20, position 32, and was five characters
-long.
 
 
-Now that we have some experience playing with syntax objects, let's write a parser.  We'll write the following into @filepath{parser.rkt}.
+Now that we have some experience playing with syntax objects, let's write a parser.
+Our parser will consume an @link["http://docs.racket-lang.org/reference/ports.html"]{input-port},
+from which we can read in bytes with @racket[read-byte], or find out where we are with @racket[port-next-location].  We also want to store some record of where our program originated from,
+so our parser will also take in a @racket[source-name] parameter.
+We'll write the following into @filepath{parser.rkt}.
 @filebox["parser.rkt"]{
                           @codeblock|{
 #lang racket
