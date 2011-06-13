@@ -147,7 +147,7 @@ We want to teach Racket what it means when we say something like:
     }|
 
 As mentioned earlier, a @litchar{#lang} line is quite active: it tells the Racket runtime how to
-convert from the surface syntax to an meaningful program.  Programs in Racket get digested
+convert from the surface syntax to a meaningful program.  Programs in Racket get digested
 in a few stages; the process looks something like this:
 
 @verbatim|{
@@ -800,7 +800,7 @@ If we try running our test program from before, it should fail on us.
 $ racket hello2.rkt 
 require: PLaneT could not find the requested package: Server had no matching package: No package matched the specified criteria
 }
-Ok, that was expected.  Since we've dissoved the development link, and since we haven't uploaded the
+Ok, that was expected.  Since we've dissolved the development link, and since we haven't uploaded the
 package onto the PLaneT network yet, we see the error that we expect to see.
 
 Next, let's use @tt{planet fileinject} to simulate an installation of our package from PLaneT.
@@ -839,6 +839,8 @@ you to upload your @filepath{bf.plt} package.
 
 @section{Acknowledgements}
 
-Thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram Krishnamurthi} for being understanding
-when I told him I had coded a @tt{brainf*ck} compiler.  Shoutouts to the PLT group at
+Very special thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram Krishnamurthi} for being understanding
+when I told him I had coded a @tt{brainf*ck} compiler.  Thanks also to Guillaume Marceau and
+Eric Hanchrow for grammar and spelling checks.  Shoutouts to the PLT group at
 Brown University --- this one is for you guys.  :)
+@;; Ha!  Closing parentheses.
