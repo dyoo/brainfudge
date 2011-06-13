@@ -738,25 +738,27 @@ If we try running our test program from before, it should fail on us.
 $ racket hello2.rkt 
 require: PLaneT could not find the requested package: Server had no matching package: No package matched the specified criteria
 }
-Ok, that was expected.  Let's use tt@{planet fileinject} to simulate an installation of our package from PLaneT.
+Ok, that was expected.  Since we've dissoved the development link, and since we haven't uploaded the
+package onto the PLaneT network yet, we see the error that we expect to see.
 
-@verbatim{
-$ planet fileinject dyoo bf.plt 1 1
-planet fileinject dyoo bf.plt 1 1
+Next, let's use @tt{planet fileinject} to simulate an installation of our package from PLaneT.
+@verbatim|{
+$ planet fileinject dyoo bf.plt 1 0
+planet fileinject dyoo bf.plt 1 0
 
 ============= Installing bf.plt on Sun, 12 Jun 2011 19:49:50 =============
 raco setup: Unpacking archive from /home/dyoo/work/brainfudge/bf.plt
-raco setup:   unpacking README in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
-raco setup:   unpacking hello.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
-raco setup:   unpacking hello2.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
-raco setup:   making directory lang in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
-raco setup:   unpacking reader.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./lang/
-raco setup:   unpacking language.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
-raco setup:   unpacking parser.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
-raco setup:   unpacking semantics.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/1/./
+raco setup:   unpacking README in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
+raco setup:   unpacking hello.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
+raco setup:   unpacking hello2.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
+raco setup:   making directory lang in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
+raco setup:   unpacking reader.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./lang/
+raco setup:   unpacking language.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
+raco setup:   unpacking parser.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
+raco setup:   unpacking semantics.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
 raco setup: version: 5.1.1 [3m]
 ...
-          }
+          }|
 Lots and lots of output later, the package should be installed.
 
 If we try running our test program again...
@@ -764,7 +766,17 @@ If we try running our test program again...
 $ racket hello2.rkt 
 Hello, World!
           }
-Good!
+Good!  This simulates the situation where the package has been installed from PLaneT.
 
-Once we're finally satisfied with the package, we can upload it onto PLaneT.  If you log onto @link["http://planet.racket-lang.org"]{planet.racket-lang.org}, the user interface will allow
+
+Once we're finally satisfied with the package's contents, we can finally upload it onto PLaneT.
+If you log onto @link["http://planet.racket-lang.org"]{planet.racket-lang.org},
+the user interface will allow
 you to upload your @filepath{bf.plt} package.
+
+
+@section{Acknowledgements}
+
+Thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram Krishnamurthi} for being understanding
+when I told him I had coded a @tt{brainf*ck} compiler.  Shoutouts to the PLT group at
+Brown University --- this one is for you guys.  :)
