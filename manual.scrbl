@@ -13,12 +13,14 @@
 
 @;; I'll need an evaluator for some small examples.
 @(define my-evaluator
-   (parameterize ([sandbox-output 'string]
-                  [sandbox-error-output 'string])
-     (make-evaluator 'racket
-                     #:requires
-                     (list (resolve-planet-path 
-                            `(planet dyoo/bf/parser))))))
+   (call-with-trusted-sandbox-configuration 
+    (lambda ()
+      (parameterize ([sandbox-output 'string]
+                     [sandbox-error-output 'string])
+        (make-evaluator 'racket
+                        #:requires
+                        (list (resolve-planet-path 
+                               `(planet dyoo/bf/parser))))))))
 
 
 
