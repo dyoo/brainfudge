@@ -840,7 +840,7 @@ you to upload your @filepath{bf.plt} package.
 @section{Acknowledgements}
 
 Very special thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram Krishnamurthi} for being understanding
-when I told him I had coded a @tt{brainf*ck} compiler.  Thanks also to Guillaume Marceau and
+when I told him I had coded a @tt{brainf*ck} compiler.  Thanks also to Guillaume Marceau, Rodolfo Carvalho, and
 Eric Hanchrow for grammar and spelling checks.  Shoutouts to the PLT group at
 Brown University --- this one is for you guys.  :)
 @;; Ha!  Closing parentheses.
