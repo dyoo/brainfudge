@@ -503,7 +503,7 @@ Hurrah!
 
 
 ... But wait!  We can't just declare victory here.  We really do want
-to allow the throngs of @tt{brainfu*ck} programmers to write @tt{brainf*ck} in the surface syntax that
+to allow the throngs of @tt{brainf*ck} programmers to write @tt{brainf*ck} in the surface syntax that
 they deserve.
 Keep @filepath{language.rkt} on hand, though.  We will reuse it by having our
 parser transform the surface syntax into the forms we defined in @filepath{language.rkt}.
