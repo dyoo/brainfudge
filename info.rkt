@@ -10,4 +10,4 @@
 (define blurb 
   '("bf: a brainf*ck compiler for Racket.  Includes a tutorial for building a language in Racket."))
 (define release-notes
-  '((p "Added runtime checks for bounds on the pointer.")))
+  '((p "Light fixes to the tutorial.")))
