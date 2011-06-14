@@ -359,15 +359,16 @@ a little more to the end of @filepath{semantics.rkt}.
 
 ;; Let's see that we can clear.
 (let ([s (new-state)])
-  (set-state-data! s (vector 0 29 92 14 243 1 6 92))
-  (set-state-ptr! s 7)
+  (set-state-data! s (vector 0 104 101 108 112 109 101 105
+                            109 109 101 108 116 105 110 103))
+  (set-state-ptr! s 15)
   ;; [ [-] < ]
   (loop s 
         (loop s (decrement-byte s))
         (decrement-ptr s))
   
   (check-equal? 0 (state-ptr s))
-  (check-equal? (vector 0 0 0 0 0 0 0 0) (state-data s)))                                     
+  (check-equal? (make-vector 16 0) (state-data s)))                                     
 }|}
                                                                                               
 Good!  Our tests, at the very least, let us know that our definitions are
