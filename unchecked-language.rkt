@@ -13,7 +13,13 @@
          (rename-out [my-module-begin #%module-begin]))
 
 
+
+;; We define a syntax parameter called current-state here.
+;; This cooperates with the other forms in this language.  See
+;; my-module-begin's comments for more details.
 (define-syntax-parameter current-state #f)
+
+
 
 
 ;; Every module in this language will make sure that it
@@ -23,12 +29,19 @@
 (define-syntax (my-module-begin stx)
   (syntax-case stx ()
     [(_ body ...)
-     (with-syntax ([s 's])
-       (syntax/loc stx
-         (#%plain-module-begin
-          (let ([s (new-state)])
-            (syntax-parameterize ([current-state (make-rename-transformer #'s)])
-               (begin body ... (void)))))))]))
+     (syntax/loc stx
+       (#%plain-module-begin
+        (let ([fresh-state (new-state)])
+
+          ;; Here are the mechanics we're using to get all the other
+          ;; forms to use this fresh state.
+          ;;
+          ;; We use the syntax parameter library to make
+          ;; any references to current-state within the body to
+          ;; syntactically re-route to the fresh-state we create here.
+          (syntax-parameterize ([current-state
+                                 (make-rename-transformer #'fresh-state)])
+            (begin body ... (void))))))]))
 
 
 ;; In order to produce good runtime error messages
