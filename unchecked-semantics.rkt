@@ -89,7 +89,7 @@
 ;; we know how to do loops!
 (define-syntax-rule (loop a-state body ...)
   (let loop ()
-    (unless (= (unsafe-vector-ref (unsafe-state-data a-state)
+    (unless (unsafe-fx= (unsafe-vector-ref (unsafe-state-data a-state)
                                   (unsafe-state-ptr a-state))
                0)
       body ...
