@@ -16,6 +16,18 @@
 (define-struct state (data ptr)
   #:mutable)
 
+
+(define-syntax-rule (unsafe-state-data a-state)
+  (unsafe-struct-ref a-state 0))
+
+(define-syntax-rule (unsafe-state-ptr a-state)
+  (unsafe-struct-ref a-state 1))
+
+(define-syntax-rule (unsafe-set-state-ptr! a-state v)
+  (unsafe-struct-set! a-state 1 v))
+
+
+
 ;; Creates a new state, with a byte array of 30000 zeros, and
 ;; the pointer at index 0.
 (define (new-state) 
@@ -34,41 +46,41 @@
 ;; increment the data pointer
 (define-syntax-rule (increment-ptr a-state stx)
   (begin
-    (set-state-ptr! a-state (unsafe-fx+ (state-ptr a-state) 1))
-    (when (unsafe-fx>= (state-ptr a-state) (unsafe-vector-length (state-data a-state)))
+    (unsafe-set-state-ptr! a-state (unsafe-fx+ (unsafe-state-ptr a-state) 1))
+    (when (unsafe-fx>= (unsafe-state-ptr a-state) (unsafe-vector-length (unsafe-state-data a-state)))
       (raise-range-errors! a-state 'increment-ptr stx))))
 
 
 ;; decrement the data pointer
 (define-syntax-rule (decrement-ptr a-state stx)
   (begin
-    (set-state-ptr! a-state (unsafe-fx- (state-ptr a-state) 1))
-    (when (unsafe-fx< (state-ptr a-state) 0)
+    (unsafe-set-state-ptr! a-state (unsafe-fx- (unsafe-state-ptr a-state) 1))
+    (when (unsafe-fx< (unsafe-state-ptr a-state) 0)
       (raise-range-errors! a-state 'decrement-ptr stx))))
 
 
 ;; increment the byte at the data pointer
 (define-syntax-rule (increment-byte a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
+  (let ([v (unsafe-state-data a-state)]
+        [i (unsafe-state-ptr a-state)])
     (unsafe-vector-set! v i (unsafe-fx+ (unsafe-vector-ref v i) 1))))
 
 ;; decrement the byte at the data pointer
 (define-syntax-rule (decrement-byte a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
+  (let ([v (unsafe-state-data a-state)]
+        [i (unsafe-state-ptr a-state)])
     (unsafe-vector-set! v i (unsafe-fx- (unsafe-vector-ref v i) 1))))
 
 ;; print the byte at the data pointer
 (define-syntax-rule (write-byte-to-stdout a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
+  (let ([v (unsafe-state-data a-state)]
+        [i (unsafe-state-ptr a-state)])
     (write-byte (unsafe-vector-ref v i) (current-output-port))))
 
 ;; read a byte from stdin into the data pointer
 (define-syntax-rule (read-byte-from-stdin a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
+  (let ([v (unsafe-state-data a-state)]
+        [i (unsafe-state-ptr a-state)])
     (unsafe-vector-set! v i (let ([v (read-byte (current-input-port))])
                               (if (eof-object? v)
                                   0
@@ -77,8 +89,8 @@
 ;; we know how to do loops!
 (define-syntax-rule (loop a-state body ...)
   (let loop ()
-    (unless (= (unsafe-vector-ref (state-data a-state)
-                                  (state-ptr a-state))
+    (unless (= (unsafe-vector-ref (unsafe-state-data a-state)
+                                  (unsafe-state-ptr a-state))
                0)
       body ...
       (loop))))
