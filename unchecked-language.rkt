@@ -1,6 +1,6 @@
 #lang racket
 
-(require "semantics.rkt"
+(require "unchecked-semantics.rkt"
          racket/stxparam)
 
 (provide greater-than
@@ -17,7 +17,8 @@
 ;; We define a syntax parameter called current-state here.
 ;; This cooperates with the other forms in this language.  See
 ;; my-module-begin's comments for more details.
-(define-syntax-parameter current-state #f)
+(define-syntax-parameter current-data #f)
+(define-syntax-parameter current-ptr #f)
 
 
 
@@ -31,7 +32,7 @@
     [(_ body ...)
      (syntax/loc stx
        (#%plain-module-begin
-        (let ([fresh-state (new-state)])
+        (let-values ([(fresh-state fresh-ptr) (new-state)])
 
           ;; Here are the mechanics we're using to get all the other
           ;; forms to use this fresh state.
@@ -39,8 +40,10 @@
           ;; We use the syntax parameter library to make
           ;; any references to current-state within the body to
           ;; syntactically re-route to the fresh-state we create here.
-          (syntax-parameterize ([current-state
-                                 (make-rename-transformer #'fresh-state)])
+          (syntax-parameterize ([current-data
+                                 (make-rename-transformer #'fresh-state)]
+                                [current-ptr
+                                 (make-rename-transformer #'fresh-ptr)])
             (begin body ... (void))))))]))
 
 
@@ -58,25 +61,25 @@
   (syntax-case stx ()
     [(_)
      (quasisyntax/loc stx
-       (increment-ptr current-state #'#,stx))]))
+       (increment-ptr current-data current-ptr #'#,stx))]))
 
 (define-syntax (less-than stx)
   (syntax-case stx ()
     [(_)
      (quasisyntax/loc stx
-       (decrement-ptr current-state #'#,stx))]))
+       (decrement-ptr current-data current-ptr #'#,stx))]))
 
 (define-syntax-rule (plus)
-  (increment-byte current-state))
+  (increment-byte current-data current-ptr))
 
 (define-syntax-rule (minus)
-  (decrement-byte current-state))
+  (decrement-byte current-data current-ptr))
 
 (define-syntax-rule (period)
-  (write-byte-to-stdout current-state))
+  (write-byte-to-stdout current-data current-ptr))
 
 (define-syntax-rule (comma)
-  (read-byte-from-stdin current-state))
+  (read-byte-from-stdin current-data current-ptr))
 
 (define-syntax-rule (brackets body ...)
-  (loop current-state body ...))
+  (loop current-data current-ptr body ...))
