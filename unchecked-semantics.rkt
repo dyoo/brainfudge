@@ -22,34 +22,30 @@
   (make-state (make-vector 30000 0)
               0))
 
-;; state-ptr-out-of-range?: state -> boolean
-;; Produces true if the pointer went off the data array.
-(define-syntax-rule (state-ptr-out-of-range? a-state)
-  (or (unsafe-fx>= (state-ptr a-state)
-          (unsafe-vector-length (state-data a-state)))
-      (unsafe-fx< (state-ptr a-state) 0)))
-
 
 ;; Check to see if we've gone out of range.  If we have a useful stx
 ;; to blame, use that syntax to highlight on screen.
-(define-syntax-rule (detect-range-errors! a-state caller-name stx)
-  (when (state-ptr-out-of-range? a-state)
-    (if stx
-        (raise-syntax-error #f "pointer went out of range of data" stx)
-        (error caller-name "pointer went out of range of data"))))
+(define-syntax-rule (raise-range-errors! a-state caller-name stx)
+  (if stx
+      (raise-syntax-error #f "pointer went out of range of data" stx)
+      (error caller-name "pointer went out of range of data")))
 
 
 ;; increment the data pointer
 (define-syntax-rule (increment-ptr a-state stx)
   (begin
     (set-state-ptr! a-state (unsafe-fx+ (state-ptr a-state) 1))
-    (detect-range-errors! a-state 'increment-ptr stx)))
+    (when (unsafe-fx>= (state-ptr a-state) (unsafe-vector-length (state-data a-state)))
+      (raise-range-errors! a-state 'increment-ptr stx))))
+
 
 ;; decrement the data pointer
 (define-syntax-rule (decrement-ptr a-state stx)
   (begin
     (set-state-ptr! a-state (unsafe-fx- (state-ptr a-state) 1))
-    (detect-range-errors! a-state 'decrement-ptr stx)))
+    (when (unsafe-fx< (state-ptr a-state) 0)
+      (raise-range-errors! a-state 'decrement-ptr stx))))
+
 
 ;; increment the byte at the data pointer
 (define-syntax-rule (increment-byte a-state)
