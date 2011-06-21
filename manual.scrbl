@@ -867,7 +867,7 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 0inputs+0outputs (0major+3554minor)pagefaults 0swaps
 }|
 
-Ok, about sixteen seconds.  Not bad.  Now let's look at our own performance.
+Ok, about sixteen seconds.  Not bad.  Now let's look at our own performance.  We surely can't do worse, right?
 
 @verbatim|{
 $ raco make prime.rkt && (echo 100 | time racket prime.rkt)
@@ -902,11 +902,11 @@ killing performance.  Using a more syntactic notion of parameter, with
 will get us a many-fold performance boost over our original
 implementation.}
 
-@item{Using macros to allow Racket's underlying compiler to do more
-inlining.  Simple enough: our semantics currently use function calls
-for each of the operations.  We can use macros to reduce that further,
-so that we get effective inlining.  This will make the generated code
-get larger, but it can be worth it.}
+@item{Using macros will allow Racket's underlying compiler to do more
+inlining.  This isn't too bad.  Our semantics currently use function
+calls for almost all of the operations (except for @racket[loop]).  We
+can use macros to get effective inlining.  This will make the
+generated code get larger, but it can be worth it.}
 
 
 @item{We can reduce the amount of boxing and unboxing of the state
