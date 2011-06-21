@@ -1822,11 +1822,10 @@ the following:
 
 
 
-
-
 And if we try running the following grumpy-looking program,
 @verbatim|{
 #lang planet dyoo/bf
+
    ***********
   *           *
   *  o>    <o  *
@@ -1836,8 +1835,9 @@ And if we try running the following grumpy-looking program,
      ********
 }|
 
-DrRacket will properly highlight the second @litchar{<} at the left edge
-of the face's mouth.
+DrRacket will properly highlight the second @litchar{<} at the left
+edge of the face's mouth.  Ok, so we can produce runtime errors with
+precise highlighting.
 
 
 @subsection{TODO}
@@ -1851,11 +1851,11 @@ particular, I need to talk about the following:
 
 @item{Using @racketmodname[racket/unsafe/ops] allows us to get us
 closer to the machine.  But this makes us much more responsible for
-getting things right.  It also demands that we raise errors with
-precise location information, and that's where we use the locations we
-carefully culled during parsing.}
+getting things right.}
 
 ]
+
+
 
 I'll add text shortly that describes each of these items in detail.  If
 you want to see a preview of the code before then, please visit the
