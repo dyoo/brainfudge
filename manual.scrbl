@@ -1411,9 +1411,10 @@ restricted, because we give each form (@racket[increment-ptr],
 because some of the rules will @racket[set!] the value of the
 identifier.  That is, to use the semantics, we've got to first bind
 the state variables,
-@racketblock[(let-values ([(data ptr) (new-state)]) ...)]
-and then use @racket[data] and @racket[ptr]
-consistently in the semantics.  In a sense, the semnatics now treat
+@racketblock[(let-values ([(data ptr) (new-state)]) 
+                ...)]
+and then use @racket[data] and @racket[ptr] bindings
+consistently with the semantics forms.  In a sense, the semantics now treat
 its arguments as reference variables.
 
 
@@ -1444,19 +1445,11 @@ particular, I need to talk about the following:
 @itemlist[
 
 
-
 @item{Using @racketmodname[racket/unsafe/ops] allows us to get us
 closer to the machine.  But this makes us much more responsible for
 getting things right.  It also demands that we raise errors with
 precise location information, and that's where we use the locations we
 carefully culled during parsing.}
-
-
-@item{Finally, we can reduce the amount of boxing and unboxing of the
-state structure by explicitly representing it as two pieces, each of
-which is passed to the semantics.  This is a case where we're
-uglifying our code a little bit, but it does give us another
-performance boost.}
 
 ]
 
