@@ -864,7 +864,7 @@ Brown University --- this one is for you guys.  :)
 
 @;; Just as in Puella Magi Madoka Magica, where things change in
 @;; Episode 10, here we too go back to the past.
-@;; We revise thing in Chapter 10 with the hopes of making
+@;; We revise in Chapter 10 with the hopes of making
 @;; things better.  Hopefully this won't be a disaster.
 
 
