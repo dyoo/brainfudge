@@ -913,12 +913,15 @@ We followed the creed that says @emph{Get it right, then get it
 fast}... except that we forgot the second part about getting it fast.
 Ooops.  So let's fix that.
 
+
+
 As a warning, if you ran through the previous sections, you may want
-to take a small break before running through this one.  This
-optimization section is included near the end because these require
-some deeper digging into Racket's language infrastructure, including
-some more substantial use of
-@link["http://docs.racket-lang.org/guide/macros.html"]{macros}.
+to take a small break before continuing forward.  This optimization
+section is included near the end because the changes we'll be making
+require some deeper digging into Racket's language infrastructure,
+expecially with
+@link["http://docs.racket-lang.org/guide/macros.html"]{macros}.  Take
+a relaxing walk, and then come back to this when you're ready.
 
 
 
