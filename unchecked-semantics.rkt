@@ -17,6 +17,16 @@
 
 
 
+;; We use a customized error structure that supports
+;; source location reporting.
+(define-struct (exn:fail:out-of-bounds exn:fail)
+  (srcloc)
+  #:property prop:exn:srclocs
+             (lambda (a-struct)
+               (list (exn:fail:out-of-bounds-srcloc a-struct))))
+
+
+
 ;; Creates a new state, with a byte array of 30000 zeros, and
 ;; the pointer at index 0.
 (define (new-state) 
@@ -26,26 +36,28 @@
 
 ;; Check to see if we've gone out of range.  If we have a useful stx
 ;; to blame, use that syntax to highlight on screen.
-(define-syntax-rule (raise-range-errors! a-state caller-name stx)
-  (if stx
-      (raise-syntax-error #f "pointer went out of range of data" stx)
-      (error caller-name "pointer went out of range of data")))
+(define-syntax-rule (raise-range-errors! a-state caller-name loc)
+  (raise (make-exn:fail:out-of-bounds
+          (format "~a: pointer went out of range of data"
+                  caller-name)
+          (current-continuation-marks)
+          (apply srcloc loc))))
 
 
 ;; increment the data pointer
-(define-syntax-rule (increment-ptr data ptr stx)
+(define-syntax-rule (increment-ptr data ptr loc)
   (begin
     (set! ptr (unsafe-fx+ ptr 1))
     (when (unsafe-fx>= ptr (unsafe-vector-length data))
-      (raise-range-errors! a-state 'increment-ptr stx))))
+      (raise-range-errors! a-state 'increment-ptr loc))))
 
 
 ;; decrement the data pointer
-(define-syntax-rule (decrement-ptr data ptr stx)
+(define-syntax-rule (decrement-ptr data ptr loc)
   (begin
     (set! ptr (unsafe-fx- ptr 1))
     (when (unsafe-fx< ptr 0)
-      (raise-range-errors! a-state 'decrement-ptr stx))))
+      (raise-range-errors! a-state 'decrement-ptr loc))))
 
 
 ;; increment the byte at the data pointer

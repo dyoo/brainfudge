@@ -61,13 +61,25 @@
   (syntax-case stx ()
     [(_)
      (quasisyntax/loc stx
-       (increment-ptr current-data current-ptr #'#,stx))]))
+       (increment-ptr current-data current-ptr
+                      '(#,(syntax-source stx)
+                        #,(syntax-line stx)
+                        #,(syntax-column stx)
+                        #,(syntax-position stx)
+                        #,(syntax-span stx))))]))
+
 
 (define-syntax (less-than stx)
   (syntax-case stx ()
     [(_)
      (quasisyntax/loc stx
-       (decrement-ptr current-data current-ptr #'#,stx))]))
+       (decrement-ptr current-data current-ptr
+                      '(#,(syntax-source stx)
+                        #,(syntax-line stx)
+                        #,(syntax-column stx)
+                        #,(syntax-position stx)
+                        #,(syntax-span stx))))]))
+
 
 (define-syntax-rule (plus)
   (increment-byte current-data current-ptr))
