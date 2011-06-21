@@ -844,10 +844,10 @@ you to upload your @filepath{bf.plt} package.
 @section{Acknowledgements}
 
 Very special thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram Krishnamurthi} for being understanding
-when I told him I had coded a @tt{brainf*ck} compiler.  Thanks also to Guillaume Marceau, Rodolfo Carvalho, and
-Eric Hanchrow for grammar and spelling checks.
-Furthermore, comments from the @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming} Reddit thread helped
-isolate a performance issue regarding parameters, motivating the section on optimization.
+when I told him I had coded a @tt{brainf*ck} compiler.  Guillaume Marceau, Rodolfo Carvalho, and
+Eric Hanchrow helped with grammar and spelling checks.  Casey Klein suggested a section in the tutorial that shows how we can generate errors that point to original sources.
+Furthermore, thanks to those who commented from the @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming} Reddit thread: they helped
+isolate a performance issue regarding parameters and motivated the section on optimization.  
 
 Finally, big shoutouts to the PLT group at
 Brown University --- this one is for you guys.  :)
@@ -855,7 +855,7 @@ Brown University --- this one is for you guys.  :)
 
 
 
-@section{Epilo... Optimization!}
+@section{Epilo... Optimization and Polishing!}
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @; Warning Will Robinson, Warning!
@@ -1050,9 +1050,9 @@ every use of @racket[name], syntactically, with a use of
 magically transformed!  That's why we can see @racket["Homerun"] in
 the second use of @racket[(say-your-name)].
 
-Yet still, outside the boundary, where we use it from
-@racket[outside-the-barrier], @racket[name] takes on the default.
-Why?
+
+Yet, where we use it from @racket[outside-the-barrier], @racket[name]
+takes on the default.  Why?
 
 Let's go through the macro expanding process by hand, and wherever we
 see @racket[(say-your-name)], let's replace with the @racket[(printf
@@ -1157,17 +1157,22 @@ previous contents.
 }|}
 
 
-Ok, let's run our benchmarks again.
 
-(WORK IN PROGRESS: I need to rerun the primes benchmark at this point
-and see how much of an improvement we get out of this.  I've measured
-informally that this takes us down to about four seconds rather than
-37, but I should recheck this.)
+What effect does this change alone make to our performance on
+@tt{brainf*ck} prime generation?  Let's cross our fingers!
 
-Hurrah.  We're saved...
+@verbatim|{
+$ raco make prime.rkt && (echo 100 | time racket prime.rkt)
+Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
+6.38user 0.09system 0:06.63elapsed 97%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+10121minor)pagefaults 0swaps
+}|
 
 
-But can we get faster?
+
+Now that's more like it!  Down from thirty-seven seconds to about six
+and a half.  Nice.  But now ambition rears its head and whispers to
+us: can we make the compiled code go even faster?
 
 
 
@@ -1176,11 +1181,6 @@ But can we get faster?
 particular, I need to talk about the following:
 @itemlist[
 
-@item{The crucial issue: the use of parameters in a hot-spot is what's
-killing performance.  Using a more syntactic notion of parameter, with
-@racketmodname[racket/stxparam], rather than the runtime parameters,
-will get us a many-fold performance boost over our original
-implementation.}
 
 
 @item{Using macros will allow Racket's underlying compiler to do more
@@ -1192,7 +1192,9 @@ but it can be worth it.}
 
 @item{Using @racketmodname[racket/unsafe/ops] allows us to get us
 closer to the machine.  But this makes us much more responsible for
-getting things right.}
+getting things right.  It also demands that we raise errors with
+precise location information, and that's where we use the locations we
+carefully culled during parsing.}
 
 
 @item{Finally, we can reduce the amount of boxing and unboxing of the
