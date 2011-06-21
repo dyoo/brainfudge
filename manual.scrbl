@@ -891,7 +891,7 @@ Ooops.
 
 Let's fix that.
 
-(2001/6/20: THE FOLLOWING TEXT IS A WORK IN PROGRESS: I need to add more content.  In
+(2011/6/20: THE FOLLOWING TEXT IS A WORK IN PROGRESS: I need to add more content.  In
 particular, I need to talk about the following:
 @itemlist[
 
@@ -903,21 +903,24 @@ will get us a many-fold performance boost over our original
 implementation.}
 
 @item{Using macros will allow Racket's underlying compiler to do more
-inlining.  This isn't too bad.  Our semantics currently use function
-calls for almost all of the operations (except for @racket[loop]).  We
-can use macros to get effective inlining.  This will make the
-generated code get larger, but it can be worth it.}
-
-
-@item{We can reduce the amount of boxing and unboxing of the state
-structure by explicitly representing it as two pieces, each of which
-is passed to the semantics.  This is a case where we're uglifying our 
-code a little bit, but it does give us another performance boost.}
+inlining.  Our semantics currently use function calls for almost all
+of the operations (except for @racket[loop]).  We can use macros to
+get effective inlining.  This will make the generated code get larger,
+but it can be worth it.}
 
 
 @item{Using @racketmodname[racket/unsafe/ops] allows us to get us
 closer to the machine.  But this makes us much more responsible for
-getting things right.}]
+getting things right.}
+
+
+@item{Finally, we can reduce the amount of boxing and unboxing of the
+state structure by explicitly representing it as two pieces, each of
+which is passed to the semantics.  This is a case where we're
+uglifying our code a little bit, but it does give us another
+performance boost.}
+
+]
 
 I'll add text shortly that describes each of these items in detail.  If
 you want to see a preview of the code before then, please visit the
