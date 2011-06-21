@@ -851,15 +851,14 @@ marketeers out to spread the Word.  We kick back, lazily twiddle our
 thumbs, and await the adoration of the global @tt{brainf*ck}
 community.
 
-But to our shock, someone brings up the impossible notion that our
+To our dismay, someone brings up the impossible notion that our
 language is
 @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/c20e7ka"]{slower}
-than an @link["https://bitbucket.org/brownan/pypy-tutorial/src/tip/example1.py"]{interpreter} written in another language.  What?!  Blasphemy!
-
-But no: the Internet is right.  Let's run the numbers.  We can grab
-another @tt{brainf*ck} implementation and try it on a good
-benchmarking program, like the one that generates prime numbers.
-Let's see what the competition looks like:
+than an @link["https://bitbucket.org/brownan/pypy-tutorial/src/tip/example1.py"]{interpreter} written in another language.  What?!  Blasphemy!  But no: the Internet is absolutely right here.  Let's run the numbers.
+We can grab another @tt{brainf*ck} implementation and try it on a good
+benchmarking program, like the one that
+@link["https://github.com/dyoo/brainfudge/blob/master/examples/prime.rkt"]{generates
+prime numbers}.  Let's see what the competition looks like:
 
 @verbatim|{
 $ echo 100 | time ~/local/pypy/bin/pypy example1.py prime.b
@@ -877,15 +876,18 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 0inputs+0outputs (0major+10259minor)pagefaults 0swaps
 }|
 
-Thirty-seven seconds.  Ouch.
+Thirty-seven seconds.  Wow.  Ouch.
 
 If we take a honest, hard look, we have to admit that something is
 seriously wrong here.  Aren't interpreters supposed to be slower than
-compilers?  What the heck happened?
+compilers?  Isn't Racket a
+@link["http://docs.racket-lang.org/guide/performance.html"]{JIT-compiled
+language}?  What the heck happened?
 
-We followed too faithfully the creed that says @emph{Get it right,
-then get it fast}... except we forgot the second part about getting it
-fast.
+
+We followed the creed that says @emph{Get it right, then get it
+fast}... except that we forgot the second part about getting it fast.
+Ooops.
 
 Let's fix that.
 
@@ -893,16 +895,29 @@ Let's fix that.
 particular, I need to talk about the following:
 @itemlist[
 
-@item{Using macros to allow Racket's underlying compiler to do more inlining.}
 
 @item{The crucial issue: the use of parameters in a hot-spot is what's
-killing performance.  Using syntax-parameters rather than the runtime
-parameters will get us a many-fold performance boost over our original
+killing performance.  Using a more syntactic notion of parameter, with
+@racketmodname[racket/stxparam], rather than the runtime parameters,
+will get us a many-fold performance boost over our original
 implementation.}
+
+@item{Using macros to allow Racket's underlying compiler to do more
+inlining.  Simple enough: our semantics currently use function calls
+for each of the operations.  We can use macros to reduce that further,
+so that we get effective inlining.  This will make the generated code
+get larger, but it can be worth it.}
+
+
+@item{We can reduce the amount of boxing and unboxing of the state
+structure by explicitly representing it as two pieces, each of which
+is passed to the semantics.  This is a case where we're uglifying our 
+code a little bit, but it does give us another performance boost.}
+
 
 @item{Using @racketmodname[racket/unsafe/ops] allows us to get us
 closer to the machine.  But this makes us much more responsible for
-getting things right...}]
+getting things right.}]
 
 I'll add text shortly that describes each of these items in detail.  If
 you want to see a preview of the code before then, please visit the
