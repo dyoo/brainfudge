@@ -862,6 +862,12 @@ Brown University --- this one is for you guys.  :)
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @centered{@larger{@bold{@italic{Warning: this section is a work in progress!}}}}
 
+@;; Just as in Puella Magi Madoka Magica, where things change in
+@;; Episode 10, here we too go back to the past.
+@;; We revise thing in Chapter 10 with the hopes of making
+@;; things better.  Hopefully this won't be a disaster.
+
+
 So we upload and release the package on PLaneT, and send our
 marketeers out to spread the Word.  We kick back, lazily twiddle our
 thumbs, and await the adoration of the global @tt{brainf*ck}
@@ -1000,6 +1006,7 @@ variable instead.''
 Let's see a demonstration of these in action, because all this talk
 is a little abstract.  What do these syntax parameters really
 do for us?  Let's play with them again a little.
+
 
 @interaction[#:eval my-evaluator
 (require racket/stxparam)
