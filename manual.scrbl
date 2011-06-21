@@ -840,7 +840,22 @@ you to upload your @filepath{bf.plt} package.
 
 
 
-@section{Optimization}
+
+@section{Acknowledgements}
+
+Very special thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram Krishnamurthi} for being understanding
+when I told him I had coded a @tt{brainf*ck} compiler.  Thanks also to Guillaume Marceau, Rodolfo Carvalho, and
+Eric Hanchrow for grammar and spelling checks.
+Furthermore, comments from the @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming} Reddit thread helped
+isolate a performance issue regarding parameters, motivating the section on optimization.
+
+Finally, big shoutouts to the PLT group at
+Brown University --- this one is for you guys.  :)
+@;; Ha!  Closing parentheses.
+
+
+
+@section{Epilo... Optimization!}
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @; Warning Will Robinson, Warning!
@@ -1200,19 +1215,5 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 1.15user 0.06system 0:01.32elapsed 91%CPU (0avgtext+0avgdata 0maxresident)k
 0inputs+0outputs (0major+10366minor)pagefaults 0swaps
 }|
+
 Wow, that's much better.  We've gone from thirty-seven seconds to just over one.  Now that's cool.
-
-
-
-
-@section{Acknowledgements}
-
-Very special thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram Krishnamurthi} for being understanding
-when I told him I had coded a @tt{brainf*ck} compiler.  Thanks also to Guillaume Marceau, Rodolfo Carvalho, and
-Eric Hanchrow for grammar and spelling checks.
-Furthermore, comments from the @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming} Reddit thread helped
-isolate a performance issue regarding parameters, motivating the section on optimization.
-
-Finally, big shoutouts to the PLT group at
-Brown University --- this one is for you guys.  :)
-@;; Ha!  Closing parentheses.
