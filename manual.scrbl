@@ -838,10 +838,105 @@ the user interface will allow
 you to upload your @filepath{bf.plt} package.
 
 
+
+@section{Optimization}
+
+@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+@; Warning Will Robinson, Warning!
+@;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+@centered{@larger{@bold{@italic{Warning: this section is a work in progress!}}}}
+
+So we upload and release the package on PLaneT, and send our
+marketeers out to spread the Word.  We kick back, lazily twiddle our
+thumbs, and await the adoration of the global @tt{brainf*ck}
+community.
+
+But to our shock, someone brings up the impossible notion that our
+language is
+@link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/c20e7ka"]{slower}
+than an @link["https://bitbucket.org/brownan/pypy-tutorial/src/tip/example1.py"]{interpreter} written in another language.  What?!  Blasphemy!
+
+But no: the Internet is right.  Let's run the numbers.  We can grab
+another @tt{brainf*ck} implementation and try it on a good
+benchmarking program, like the one that generates prime numbers.
+Let's see what the competition looks like:
+
+@verbatim|{
+$ echo 100 | time ~/local/pypy/bin/pypy example1.py prime.b
+Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
+16.72user 0.24system 0:17.18elapsed 98%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+3554minor)pagefaults 0swaps
+}|
+
+Ok, about sixteen seconds.  Not bad.  Now let's look at our own performance.
+
+@verbatim|{
+$ raco make prime.rkt && (echo 100 | time racket prime.rkt)
+Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
+37.36user 0.65system 0:38.15elapsed 99%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+10259minor)pagefaults 0swaps
+}|
+
+Thirty-seven seconds.  Ouch.
+
+If we take a honest, hard look, we have to admit that something is
+seriously wrong here.  Aren't interpreters supposed to be slower than
+compilers?  What the heck happened?
+
+We followed too faithfully the creed that says @emph{Get it right,
+then get it fast}... except we forgot the second part about getting it
+fast.
+
+Let's fix that.
+
+(2001/6/20: THE FOLLOWING TEXT IS A WORK IN PROGRESS: I need to add more content.  In
+particular, I need to talk about the following:
+@itemlist[
+
+@item{Using macros to allow Racket's underlying compiler to do more inlining.}
+
+@item{The crucial issue: the use of parameters in a hot-spot is what's
+killing performance.  Using syntax-parameters rather than the runtime
+parameters will get us a many-fold performance boost over our original
+implementation.}
+
+@item{Using @racketmodname[racket/unsafe/ops] allows us to get us
+closer to the machine.  But this makes us much more responsible for
+getting things right...}]
+
+I'll add text shortly that describes each of these items in detail.  If
+you want to see a preview of the code before then, please visit the
+@link["https://github.com/dyoo/brainfudge"]{github repository} and
+take a look at
+@link["https://github.com/dyoo/brainfudge/blob/master/unchecked-semantics.rkt"]{@filepath{unchecked-semantics.rkt}}
+and
+@link["https://github.com/dyoo/brainfudge/blob/master/unchecked-language.rkt"]{@filepath{unchecked-language.rkt}}. )
+
+...
+
+
+What's the effect of applying the combination of all these optimizations?  Well,
+let's see the numbers now!
+
+@verbatim|{
+$ raco make prime.rkt && (echo 100 | time racket prime.rkt)
+Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
+1.15user 0.06system 0:01.32elapsed 91%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+10366minor)pagefaults 0swaps
+}|
+Wow, that's much better.  We've gone from thirty-seven seconds to just over one.  Now that's cool.
+
+
+
+
 @section{Acknowledgements}
 
 Very special thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram Krishnamurthi} for being understanding
 when I told him I had coded a @tt{brainf*ck} compiler.  Thanks also to Guillaume Marceau, Rodolfo Carvalho, and
-Eric Hanchrow for grammar and spelling checks.  Shoutouts to the PLT group at
+Eric Hanchrow for grammar and spelling checks.
+Furthermore, comments from the @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming} Reddit thread helped
+isolate a performance issue regarding parameters, motivating the section on optimization.
+
+Finally, big shoutouts to the PLT group at
 Brown University --- this one is for you guys.  :)
 @;; Ha!  Closing parentheses.
