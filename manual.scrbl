@@ -892,9 +892,10 @@ fast}... except that we forgot the second part about getting it fast.
 Ooops.  So let's fix that.
 
 As a warning, if you ran through the previous sections, you may want
-to take a break before running through this one.  This optimization
-section is include at the end precisely because these require some
-deeper digging into Racket's language infrastructure, including
+to take a small break before running through this one.  This
+optimization section is included near the end because these require
+some deeper digging into Racket's language infrastructure, including
+some more substantial use of
 @link["http://docs.racket-lang.org/guide/macros.html"]{macros}.
 
 
@@ -1010,22 +1011,66 @@ name
      (outside-the-barrier)))
 ]
 
-It helps to keep in mind that, in Racket, macros are truly functions
-that take an input syntax, and produce an output syntax.
-Here, we define @racket[name] to be a macro that expands to
-@racket[#'"Madoka"] by default.  When we use @racket[name] directly,
-and when we use it in @racket[(say-your-name)] for the first time,
-we're seeing this default in place.
+It helps to keep in mind that, in Racket, macros are functions that
+work during compile-time.  They take an input syntax, and produce an
+output syntax.  Here, we define @racket[name] to be a macro that
+expands to @racket[#'"Madoka"] by default.  When we use @racket[name]
+directly, and when we use it in @racket[(say-your-name)] for the first
+time, we're seeing this default in place.
 
-However, we make things more interesting in the second use of
-@racket[say-your-name]: we create a variable binding, and then use
-@racket[syntax-parameterize] to reroute every use of @racket[name],
-syntactically, with a use of @racket[the-hero], within the lexical
-boundaries of the @racket[syntax-parameterize]'s body.  Within that
-boundary, it's magically transformed!  That's why we can see
-@racket["Homerun"] in the second use of @racket[(say-your-name)].  Yet
-still, outside the boundary, where we use it from
+However, we make things more interesting (and a little more
+confusing!) in the second use of @racket[say-your-name]: we create a
+variable binding, and then use @racket[syntax-parameterize] to reroute
+every use of @racket[name], syntactically, with a use of
+@racket[the-hero], within the lexical boundaries of the
+@racket[syntax-parameterize]'s body.  Within that boundary, it's
+magically transformed!  That's why we can see @racket["Homerun"] in
+the second use of @racket[(say-your-name)].
+
+Yet still, outside the boundary, where we use it from
 @racket[outside-the-barrier], @racket[name] takes on the default.
+Why?
+
+Let's go through the macro expanding process by hand, and wherever we
+see @racket[(say-your-name)], let's replace with the @racket[(printf
+...)].  So when we say:
+@racketblock[
+(define (outside-the-barrier)
+  (printf "outside-the-barrier says: ")
+  (say-your-name))
+]
+we really mean:
+(define (outside-the-barrier)
+  (printf "outside-the-barrier says: ")
+  (printf "Your name is ~a\n" name))
+]
+
+The use of @racket[name] here is lexically outside the barrier set up
+by @racket[syntax-parameterize].
+
+And now let's look at the second expression, the one with the @racket[let].  We take:
+@racketblock[
+(let ([the-hero "Homerun"])
+  (syntax-parameterize 
+        ([name (make-rename-transformer #'the-hero)])
+     (say-your-name)
+     (outside-the-barrier)))
+]
+and after expanding it partially by hand, we get:
+@racketblock[
+(let ([the-hero "Homerun"])
+  (syntax-parameterize 
+        ([name (make-rename-transformer #'the-hero)])
+     (printf "Your name is ~a\n" name)
+     (outside-the-barrier)))
+]
+
+Ah!  So the use of @racket[name] that's introduced by
+@racket[say-your-name] is within the lexical boundaries of the
+@racket[syntax-parameterize] form.  But @racket[outside-the-barrier]
+is a plain, vanilla function, and because it's not a macro, it doesn't
+inline itself into the @racket[syntax-parameterize]'s body.
+
 
 
 Whew!  Frankly, all of this is a little magical.  But the hilarious
