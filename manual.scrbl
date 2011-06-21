@@ -1447,11 +1447,11 @@ consider the following semantic situations:
 @item{The program may try to read a byte from the standard input port,
 and encounter @racket[eof] instead.}
 
-@item{The machine might be instructed to move the pointer right off
-the data array.}
-
 @item{A program may try to increment the value at the pointer beyond
 the boundaries of a byte.}
+
+@item{The machine might be instructed to move the pointer right off
+the data array.}
 ]
 
 Yikes.  We should have looked at this earlier!  None of these are
@@ -1492,10 +1492,65 @@ change the definition of @racket[read-byte-from-stdin] in
 }
 
 
+@subsubsection{@racket[out-of-range byte mutation]}
+
+Next, let's look at what the portability guide says about what happens
+when we increment or decrement a byte past certain limits.
+
+@nested[#:style 'inset]{
+The range of values a single cell can contain is
+implementation-defined. (The range need not be consistent, either:
+consider the case of a "bignum" implementation, whose cells' ranges
+would be limited only by currently available resources.) However, the
+range of every cell shall always at least include the values 0 through
+127, inclusive.)
+
+If a program attempts to either decrement the value of a cell below
+its documented minimum value, if any, or increment the value of a cell
+beyond its documented maximum value, if any, then the value in the
+cell after such an operation is implementation-defined. (Most
+implementations choose to let the value wrap around in a fashion
+typical to C integers, but this is not required.)}
+
+
+So it looks like we have a little leeway here.  We've implicitly been
+using an vector of bytes, since we've been using @racket[read-byte]
+and @racket[write-byte] on the values of the @racket[data] vector.
+Since
+@link["http://docs.racket-lang.org/guide/bytestrings.html#(tech._byte)"]{bytes}
+range between @racket[0] and @racket[255], let's keep our cells in
+that range too.  One simple tool we can use is @racket[modulo], which
+allows us to keep the values in that range.  Let's use it.
+
+@codeblock|{
+;; increment the byte at the data pointer
+(define-syntax-rule (increment-byte data ptr)
+  (vector-set! data ptr (modulo (add1 (vector-ref data ptr)) 256)))
+ 
+;; decrement the byte at the data pointer
+(define-syntax-rule (decrement-byte data ptr)
+  (vector-set! data ptr (modulo (sub1 (vector-ref data ptr)) 256)))
+}|
+
+
+
 @subsubsection{@racket[out-of-bounds pointer movement]}
 
+What does the portability guide say about moving the tape out-of-bounds?
 
-@subsubsection{@racket[out-of-range byte mutation]}
+@nested[#:style 'inset]{
+If a program attempts to move the pointer below the first array cell,
+or beyond the last array cell, then that program's behavior is
+undefined. (A few implementations cause the pointer to wrap around,
+but many, perhaps most, implementations behave in a manner consistent
+with a C pointer wandering off into arbitrary memory.)}
+
+Wait.  Stop right there.  It is absolutely unacceptable for us to
+crash.  Even we @tt{brainf*ck} programmers must have our standards.
+Instead, let's make it a guaranteed runtime error that halts
+evaluation.  Moreover, let's make sure the error message points
+directly at the offending instruction in the source text.
+
 
 
 
