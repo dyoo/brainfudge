@@ -868,7 +868,7 @@ thumbs, and await the adoration of the global @tt{brainf*ck}
 community.
 
 To our dismay, someone brings up the impossible notion that our
-language is
+implementation is
 @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/c20e7ka"]{slower}
 than an @link["https://bitbucket.org/brownan/pypy-tutorial/src/tip/example1.py"]{interpreter} written in another language.  What?!  Blasphemy!  But no: the Internet is absolutely right here.  Let's run the numbers.
 We can grab another @tt{brainf*ck} implementation and try it on a good
