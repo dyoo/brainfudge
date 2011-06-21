@@ -903,12 +903,14 @@ deeper digging into Racket's language infrastructure, including
 @subsection{Staring into the hot-spot}
 
 If we look a little closely into our implementation, we might notice
-something funny.  Each of the forms in @filepath{language.rkt} refer
-to the @racket[current-state] parameter: we use the parameter to make
-sure the other forms in the language use the same
-@racket[current-state] value.  And of course we want this kind of
-localized behavior, to prevent the kind of interference that might
-happen if two @tt{brainf*ck} programs run.
+something funny.  Well, we might notice many things that look funny in
+our @tt{brainf*ck} implementation, but there's a particular one we'll
+focus on: each of the forms in @filepath{language.rkt} refer to the
+@racket[current-state] parameter.  We use that parameter to make sure
+the other forms in the language use the same @racket[current-state]
+value.  And of course we want this kind of localized behavior, to
+prevent the kind of interference that might happen if two
+@tt{brainf*ck} programs run.
 
 ... But every use of the parameter appears to be a function call.
 Just how bad is that?  Let's see.  We can fire up our trusty DrRacket
