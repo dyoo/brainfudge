@@ -1552,10 +1552,292 @@ evaluation.  Moreover, let's make sure the error message points
 directly at the offending instruction in the source text.
 
 
+How do we get our errors to highlight in DrRacket?  Racket, like many
+languages, provides exceptions as structured values.  In particular,
+DrRacket will cooperate when it sees an exception that provides source
+location.
+
+
+Let's look at a short and quick example of error highlighting in
+action.  Open up DrRacket and run the following program:
+@codeblock|{
+#lang racket
+
+;; We create a structure that supports the
+;; prop:exn:srcloc protocol.  It carries
+;; with it the location of the syntax that
+;; is guilty.
+(define-struct (exn:fail:he-who-shall-not-be-named
+                exn:fail)
+  (a-srcloc)
+ #:property prop:exn:srclocs
+            (lambda (a-struct)
+              (match a-struct
+                [(struct exn:fail:he-who-shall-not-be-named
+                         (msg marks a-srcloc))
+                 (list a-srcloc)])))
+
+;; We can play with this by creating a form that
+;; looks at identifiers, and only flags specific ones.
+(define-syntax (skeeterize stx)
+ (syntax-case stx ()
+   [(_ expr)
+    (cond
+      [(and (identifier? #'expr)
+            (eq? (syntax-e #'expr) 'voldemort))
+       (quasisyntax/loc stx
+         (raise (make-exn:fail:he-who-shall-not-be-named
+                 "oh dear don't say his name"
+                 (current-continuation-marks)
+                 (srcloc '#,(syntax-source #'expr)
+                         '#,(syntax-line #'expr)
+                         '#,(syntax-column #'expr)
+                         '#,(syntax-position #'expr)
+                         '#,(syntax-span #'expr)))))]
+      [else
+       ;; Otherwise, leave the expression alone.
+       #'expr])]))
+
+(define (f x)
+ (* (skeeterize x) x))
+
+(define (g voldemort)
+ (* (skeeterize voldemort) voldemort))
+
+
+;; Examples:
+(f 7)
+(g 7)  ;; The error should highlight the use
+       ;; of the one-who-shall-not-be-named
+       ;; in g.
+}|
+
+When we create a @racket[make-exn:fail:he-who-shall-not-be-named], we
+provide it a @racket[srcloc] from the originating syntax objects.
+Furthermore, we tell the Racket runtime that this structure is a good
+source for source locations, by annotating the structure's definition
+with @racket[prop:exn:srclocs].  This allows the runtime system to
+cooperate with the DrRacket editor, so that when a
+@racket[make-exn:fail:he-who-shall-not-be-named] does get raised at
+runtime, the editor can nicely highlight the offending party.
+
+
+When we were looking at parsing, we were careful enough to produce
+syntax objects with source locations.  It would be a shame to waste
+that effort.  Here's what we'll do: we'll adjust the semantics of
+@racket[increment-ptr] and @racket[decrement-ptr] to take in one more
+argument: a representation of the source location.  If we see that the
+pointer's going to fall off, we can then raise an exception that's
+annotated with @racket[srcloc] information.  That should give the
+DrRacket environment the information it needs to highlight
+tape-movement errors at runtime.
+
+We'll need to change the definition of @racket[greater-than] and
+@racket[less-than] in @filepath{language.rkt} to pass along the source
+locations to the semantics forms, and we need to change the semantics
+to use that location information whenever bad things happen.  Here's
+what @racket[greater-than] will look like:
+@codeblock|{
+(define-syntax (greater-than stx)
+  (syntax-case stx ()
+    [(_)
+     (quasisyntax/loc stx
+       (increment-ptr current-data current-ptr 
+                      '(#,(syntax-source stx)
+                        #,(syntax-line stx)
+                        #,(syntax-column stx)
+                        #,(syntax-position stx)
+                        #,(syntax-span stx))))]))}|
+
+One small complication is that we need the ability to talk about the
+source location of the syntax object being fed to the
+@racket[greater-than] macro, so we switched from using
+@racket[define-syntax-rule] to the more low-level @racket[syntax-case]
+macro definer.
+
+Let's look at the corresponding changes we need to make to
+@racket[increment-ptr]; assuming we have a definition for an
+@racket[exn:fail:out-of-bounds] exception, the code for
+@racket[increment-ptr] will look like this.
+
+@codeblock|{
+(define-syntax-rule (increment-ptr data ptr loc-sexp)
+  (begin
+    (set! ptr (add1 ptr))
+    (when (>= ptr (vector-length data))
+      (raise (make-exn:fail:out-of-bounds 
+              "out of bounds"
+              (current-continuation-marks)
+              (apply srcloc loc-sexp))))))}|
 
 
 
 
+
+Our @filepath{semantics.rkt} and @filepath{language.rkt} now look like
+the following:
+
+@filebox["semantics.rkt"]{
+@codeblock|{
+#lang racket
+
+(provide (all-defined-out))
+ 
+;; We use a customized error structure that supports
+;; source location reporting.
+(define-struct (exn:fail:out-of-bounds exn:fail)
+  (srcloc)
+  #:property prop:exn:srclocs
+             (lambda (a-struct)
+               (list (exn:fail:out-of-bounds-srcloc a-struct))))
+
+;; Provides two values: a byte array of 30000 zeros, and
+;; the pointer at index 0.
+(define-syntax-rule (new-state)
+  (values (make-vector 30000 0)
+          0))
+ 
+;; increment the data pointer
+(define-syntax-rule (increment-ptr data ptr loc-sexp)
+  (begin
+    (set! ptr (add1 ptr))
+    (when (>= ptr (vector-length data))
+      (raise (make-exn:fail:out-of-bounds 
+              "out of bounds"
+              (current-continuation-marks)
+              (apply srcloc loc-sexp))))))
+
+;; decrement the data pointer
+(define-syntax-rule (decrement-ptr data ptr loc-sexp)
+  (begin
+    (set! ptr (sub1 ptr))
+    (when (< ptr 0)
+      (raise (make-exn:fail:out-of-bounds 
+              "out of bounds"
+              (current-continuation-marks)
+              (apply srcloc loc-sexp))))))
+ 
+;; increment the byte at the data pointer
+(define-syntax-rule (increment-byte data ptr)
+  (vector-set! data ptr (modulo (add1 (vector-ref data ptr)) 256)))
+ 
+;; decrement the byte at the data pointer
+(define-syntax-rule (decrement-byte data ptr)
+  (vector-set! data ptr (modulo (sub1 (vector-ref data ptr)) 256)))
+ 
+;; print the byte at the data pointer
+(define-syntax-rule (write-byte-to-stdout data ptr)
+  (write-byte (vector-ref data ptr) (current-output-port)))
+ 
+;; read a byte from stdin into the data pointer
+(define-syntax-rule (read-byte-from-stdin data ptr)
+  (vector-set! data ptr 
+               (let ([a-value (read-byte (current-input-port))])
+                 (if (eof-object? a-value)
+                     0
+                     a-value))))
+ 
+;; we know how to do loops!
+(define-syntax-rule (loop data ptr body ...)
+  (let loop ()
+    (unless (= (vector-ref data ptr)
+               0)
+      body ...
+      (loop))))
+}|}
+
+
+
+@filebox["language.rkt"]{
+@codeblock|{
+#lang racket
+ 
+(require "semantics.rkt"
+         racket/stxparam)
+ 
+(provide greater-than
+         less-than
+         plus
+         minus
+         period
+         comma
+         brackets
+         (rename-out [my-module-begin #%module-begin]))
+ 
+;; The current-data and current-ptr are syntax parameters used by the
+;; rest of this language.
+(define-syntax-parameter current-data #f)
+(define-syntax-parameter current-ptr #f)
+ 
+;; Every module in this language will make sure that it
+;; uses a fresh state.
+(define-syntax-rule (my-module-begin body ...)
+  (#%plain-module-begin
+    (let-values ([(fresh-data fresh-ptr) (new-state)])
+       (syntax-parameterize
+            ([current-data
+              (make-rename-transformer #'fresh-data)]
+             [current-ptr
+              (make-rename-transformer #'fresh-ptr)])
+           body ...))))
+ 
+(define-syntax (greater-than stx)
+  (syntax-case stx ()
+    [(_)
+     (quasisyntax/loc stx
+       (increment-ptr current-data current-ptr 
+                      '(#,(syntax-source stx)
+                        #,(syntax-line stx)
+                        #,(syntax-column stx)
+                        #,(syntax-position stx)
+                        #,(syntax-span stx))))]))
+ 
+(define-syntax (less-than stx)
+  (syntax-case stx ()
+    [(_)
+     (quasisyntax/loc stx
+       (decrement-ptr current-data current-ptr
+                      '(#,(syntax-source stx)
+                        #,(syntax-line stx)
+                        #,(syntax-column stx)
+                        #,(syntax-position stx)
+                        #,(syntax-span stx))))]))
+ 
+(define-syntax-rule (plus)
+  (increment-byte current-data current-ptr))
+ 
+(define-syntax-rule (minus)
+  (decrement-byte current-data current-ptr))
+ 
+(define-syntax-rule (period)
+  (write-byte-to-stdout current-data current-ptr))
+ 
+(define-syntax-rule (comma)
+  (read-byte-from-stdin current-data current-ptr))
+ 
+(define-syntax-rule (brackets body ...)
+  (loop current-data current-ptr body ...))
+}|}
+
+
+
+
+
+
+And if we try running the following grumpy-looking program,
+@verbatim|{
+#lang planet dyoo/bf
+   ***********
+  *           *
+  *  o>    <o  *
+  *            *
+  *  <<<<<<<<  *
+   *          *
+     ********
+}|
+
+DrRacket will properly highlight the second @litchar{<} at the left edge
+of the face's mouth.
 
 
 @subsection{TODO}
