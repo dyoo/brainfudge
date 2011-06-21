@@ -1436,6 +1436,70 @@ Ok, we're down to about a second plus a little more.
 
 
 
+@subsection{Strapping on the safety goggles}
+
+Before we go further in this optimization question, we should ask
+ourselves: is our language actually doing the right thing?  We might
+consider the following semantic situations:
+
+@itemlist[
+
+@item{The program may try to read a byte from the standard input port,
+and encounter @racket[eof] instead.}
+
+@item{The machine might be instructed to move the pointer right off
+the data array.}
+
+@item{A program may try to increment the value at the pointer beyond
+the boundaries of a byte.}
+]
+
+Yikes.  We should have looked at this earlier!  None of these are
+addressed by our current implementation, and we'd better correct these
+flaws before continuing forward, before anyone else notices.  And even
+if this costs us a few millseconds in performance, it's certainly
+worth knowing exactly what should happen in these situations.
+
+
+
+@subsubsection{@racket[eof]}
+
+According to the
+@link["http://www.muppetlabs.com/~breadbox/bf/standards.html"]{Portable
+Brainf*ck} guide, 
+
+@nested[#:style 'inset]{
+If a program attempts to input a value when there is no more data in
+the input stream, the value in the current cell after such an
+operation is implementation-defined. (The most common choices are to
+either store 0, or store -1, or to leave the cell's value
+unchanged. This is frequently the most problematic issue for the
+programmer wishing to achieve portability.)}
+
+
+Let's choose to treat the reading of @racket[eof] as a zero.  We can
+change the definition of @racket[read-byte-from-stdin] in
+@filepath{semantics.rkt} to do this.
+
+@codeblock{
+;; read a byte from stdin into the data pointer
+(define-syntax-rule (read-byte-from-stdin data ptr)
+  (vector-set! data ptr
+               (let ([a-value (read-byte (current-input-port))])
+                 (if (eof-object? a-value)
+                     0
+                     a-value))))
+}
+
+
+@subsubsection{@racket[out-of-bounds pointer movement]}
+
+
+@subsubsection{@racket[out-of-range byte mutation]}
+
+
+
+
 
 
 
