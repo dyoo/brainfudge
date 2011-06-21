@@ -954,8 +954,9 @@ the variable more directly?
                (add1 (unbox my-parameter))))
    (check-equal? (unbox my-parameter) 10000000)))]
 
-In the immortal words of Neo: @emph{Whoa}.  Ok, we've got ourselves a
-target!
+In the immortal words of
+@link["http://en.wikipedia.org/wiki/Neo_(The_Matrix)"]{Neo}:
+@emph{Whoa}.  Ok, we've got ourselves a target!
 
 
 Let's take a look again at the definition of our
