@@ -982,7 +982,7 @@ variable instead.''
 
 Let's see a demonstration of these in action, because all this talk
 is a little abstract.  What do these syntax parameters really
-do for us?
+do for us?  Let's play with them again a little.
 
 @interaction[#:eval my-evaluator
 (require racket/stxparam)
@@ -1010,8 +1010,8 @@ name
      (outside-the-barrier)))
 ]
 
-It helps to keep in mind that, in Racket, macros are, fundamentally,
-functions that take an input syntax, and produce an output syntax.
+It helps to keep in mind that, in Racket, macros are truly functions
+that take an input syntax, and produce an output syntax.
 Here, we define @racket[name] to be a macro that expands to
 @racket[#'"Madoka"] by default.  When we use @racket[name] directly,
 and when we use it in @racket[(say-your-name)] for the first time,
