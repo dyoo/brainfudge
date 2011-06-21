@@ -889,9 +889,15 @@ language}?  What the heck happened?
 
 We followed the creed that says @emph{Get it right, then get it
 fast}... except that we forgot the second part about getting it fast.
-Ooops.
+Ooops.  So let's fix that.
 
-Let's fix that.
+As a warning, if you ran through the previous sections, you may want
+to take a break before running through this one.  This optimization
+section is include at the end precisely because these require some
+deeper digging into Racket's language infrastructure, including
+@link["http://docs.racket-lang.org/guide/macros.html"]{macros}.
+
+
 
 
 @subsection{Staring into the hot-spot}
@@ -962,15 +968,15 @@ replace uses of @racket[current-state] with @racket[my-fresh-state],
 because @racket[my-fresh-state] isn't a global variable!  What do we
 do?
 
-There's a small tool in the Racket library that allows us to solve
-this problem: it's called a
+There's a tool in the Racket library that allows us to solve this
+problem: it's called a
 @link["http://docs.racket-lang.org/reference/stxparam.html"]{syntax
 parameter}.  A syntax parameter is similar to the reviled parameter
 that we talked about earlier, except that it works
 @emph{syntactically} rather than @emph{dynamically}.  A common use of
 a syntax parameter is to let us wrap a certain area in our code, and
 say: ``Any where this identifier shows up, rename it to use this
-variable''.
+variable instead.''
 
 Let's see a demonstration of these in action, because all this talk
 is a little abstract.  What do these syntax parameters really
@@ -1024,9 +1030,10 @@ Whew!  Frankly, all of this is a little magical.  But the hilarious
 thing, despite all this verbiage about syntax parameters, is that the
 implementation of the language looks almost exactly the same as
 before.  Here's a version of the language that uses these syntax
-parameters; let's call it @filepath{faster-language.rkt}.
+parameters; let's save it into @filepath{language.rkt} and replace the
+previous contents.
 
-@filebox["faster-language.rkt"]{
+@filebox["language.rkt"]{
                           @codeblock|{
 #lang racket
 
@@ -1079,13 +1086,17 @@ parameters; let's call it @filepath{faster-language.rkt}.
 }|}
 
 
-
-
+Ok, let's run our benchmarks again.
 
 (WORK IN PROGRESS: I need to rerun the primes benchmark at this point
-and see how much of an improvement we get out of this)
+and see how much of an improvement we get out of this.  I've measured
+informally that this takes us down to about four seconds rather than
+37, but I should recheck this.)
+
+Hurrah.  We're saved...
 
 
+But can we get faster?
 
 
 
