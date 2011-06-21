@@ -864,8 +864,9 @@ Brown University --- this one is for you guys.  :)
 
 @;; Just as in Puella Magi Madoka Magica, where things change in
 @;; Episode 10, here we too go back to the past.
-@;; We revise in Chapter 10 with the hopes of making
-@;; things better.  Hopefully this won't be a disaster.
+@;; We revise and revise in Chapter 10 with the hopes of making
+@;; things better.
+@;; Hopefully this won't be a disaster.
 
 
 So we upload and release the package on PLaneT, and send our
@@ -1177,17 +1178,20 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 Now that's more like it!  Down from thirty-seven seconds to about six
 and a half.  Nice.  When we compare this versus the previous
 implementation of the language, we might laugh ruefully: we just got
-rid of a few more parentheses.  But of course, that's not what we
-truly did.  What in the world just happened?
+rid of a few more parentheses and typed in a few symbols.  But of
+course, that's not what we truly did.  What in the world just
+happened?
 
 
-Semantically, we applied a fairly large change to the implementation.
-Let's summarize exactly what we did: we had used @racket[parameterize]
-to maintain local state within the dynamic extent of our module's
-body.  Hoever, we don't need the full power of dynamic scope: a
-simpler (and cheaper!) lexical scoping mechanism is sufficient for our
-purposes.
-
+Let's summarize exactly what we did: earlier, we had used
+@racket[parameterize] to maintain some shared local state within the
+dynamic extent of our module's body.  However, on reflection, we see
+that we don't need the full power of dynamic scope: a simpler (and
+cheaper!) lexical scoping mechanism is sufficient here.  We now use
+@racket[syntax-parameterize] as our mechanism for sharing that state
+with the rest of the language.  And if we ever see
+@racket[parameterize] in a tight inner loop again, we shudder
+instinctively.
 
 
 But now ambition rears its head and whispers to us: can we make the
