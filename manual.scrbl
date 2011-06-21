@@ -1199,18 +1199,250 @@ compiled code go even faster?
 
 
 
+@subsection{Macros, macros everywhere}
+
+One trivial thing we can do is revisit our @filepath{semantics.rkt}
+file, and transform all of the exported function definitions into
+macros.  This allows Racket's compiler to inline the definitions for
+each use.  That is, right now, Racket process and expands our
+@tt{brainf*ck} programs up to the function definitions in the
+@filepath{semantics.rkt}.  Basically, we can go in and replace each
+@racket[define] with a @racket[define-syntax-rule].
+
+Here's what @filepath{semantics.rkt} looks like after this change:
+@filebox["semantics.rkt"]{
+@codeblock|{
+#lang racket
+ 
+(require rackunit)                ;; for unit testing
+(provide (all-defined-out))
+ 
+;; Our state contains two pieces.
+(define-struct state (data ptr)
+  #:mutable)
+ 
+;; Creates a new state, with a byte array of 30000 zeros, and
+;; the pointer at index 0.
+(define-syntax-rule (new-state)
+  (make-state (make-vector 30000 0)
+              0))
+ 
+;; increment the data pointer
+(define-syntax-rule (increment-ptr a-state)
+  (set-state-ptr! a-state (add1 (state-ptr a-state))))
+ 
+;; decrement the data pointer
+(define-syntax-rule (decrement-ptr a-state)
+  (set-state-ptr! a-state (sub1 (state-ptr a-state))))
+ 
+;; increment the byte at the data pointer
+(define-syntax-rule (increment-byte a-state)
+  (let ([v (state-data a-state)]
+        [i (state-ptr a-state)])
+    (vector-set! v i (add1 (vector-ref v i)))))
+ 
+;; decrement the byte at the data pointer
+(define-syntax-rule (decrement-byte a-state)
+  (let ([v (state-data a-state)]
+        [i (state-ptr a-state)])
+    (vector-set! v i (sub1 (vector-ref v i)))))
+ 
+;; print the byte at the data pointer
+(define-syntax-rule (write-byte-to-stdout a-state)
+  (let ([v (state-data a-state)]
+        [i (state-ptr a-state)])
+    (write-byte (vector-ref v i) (current-output-port))))
+ 
+;; read a byte from stdin into the data pointer
+(define-syntax-rule (read-byte-from-stdin a-state)
+  (let ([v (state-data a-state)]
+        [i (state-ptr a-state)])
+    (vector-set! v i (read-byte (current-input-port)))))
+ 
+;; we know how to do loops!
+(define-syntax-rule (loop a-state body ...)
+  (let loop ()
+    (unless (= (vector-ref (state-data a-state)
+                           (state-ptr a-state))
+               0)
+      body ...
+      (loop))))
+}|}
+
+What effect does this have on our benchmark?
+@verbatim|{
+$ raco make prime.rkt && (echo 100 | time racket prime.rkt)
+raco make prime.rkt && (echo 100 | time racket prime.rkt)
+Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
+3.78user 0.10system 0:03.96elapsed 97%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+10101minor)pagefaults 0swaps
+}|
+
+Ok, inlining each of the definitions of the semantics gives us a
+little more performance, at the cost of some code expansion.
+
+
+
+@subsection{Structures?  Where's we're going, we won't need structures...}
+
+While we have our eye on @filepath{semantics.rkt}, we might wonder:
+how much is it costing us to access the @racket[data] and @racket[ptr]
+fields of our state?  The use of the structure introduces an indirect
+memory access.  Maybe we can eliminate it, by saying that the
+@emph{state} of our language consists of two pieces, rather than one
+aggregate piece.  So one proposal we can consider is to remove the
+structure, and have each of the rules in our semantics deal with both
+pieces of the state.
+
+The editing for this will be somewhat non-local: we'll need to touch
+both @filepath{semantics.rkt} and @filepath{language.rkt} because each
+form in the semantics will take in two pieces, and each language
+construct in the language must provide those two pieces.  Let's see
+what this looks like for both files.
+
+
+@filebox["semantics.rkt"]{
+@codeblock|{
+#lang racket
+ 
+(provide (all-defined-out))
+ 
+;; Provides two values: a byte array of 30000 zeros, and
+;; the pointer at index 0.
+(define-syntax-rule (new-state)
+  (values (make-vector 30000 0)
+          0))
+ 
+;; increment the data pointer
+(define-syntax-rule (increment-ptr data ptr)
+  (set! ptr (add1 ptr)))
+ 
+;; decrement the data pointer
+(define-syntax-rule (decrement-ptr data ptr)
+  (set! ptr (sub1 ptr)))
+ 
+;; increment the byte at the data pointer
+(define-syntax-rule (increment-byte data ptr)
+  (vector-set! data ptr (add1 (vector-ref data ptr))))
+ 
+;; decrement the byte at the data pointer
+(define-syntax-rule (decrement-byte data ptr)
+  (vector-set! data ptr (sub1 (vector-ref data ptr))))
+ 
+;; print the byte at the data pointer
+(define-syntax-rule (write-byte-to-stdout data ptr)
+  (write-byte (vector-ref data ptr) (current-output-port)))
+ 
+;; read a byte from stdin into the data pointer
+(define-syntax-rule (read-byte-from-stdin data ptr)
+  (vector-set! data ptr (read-byte (current-input-port))))
+ 
+;; we know how to do loops!
+(define-syntax-rule (loop data ptr body ...)
+  (let loop ()
+    (unless (= (vector-ref data ptr)
+               0)
+      body ...
+      (loop))))
+}|}
+
+
+
+@filebox["language.rkt"]{
+@codeblock|{
+#lang racket
+ 
+(require "semantics.rkt"
+         racket/stxparam)
+ 
+(provide greater-than
+         less-than
+         plus
+         minus
+         period
+         comma
+         brackets
+         (rename-out [my-module-begin #%module-begin]))
+ 
+;; The current-data and current-ptr are syntax parameters used by the
+;; rest of this language.
+(define-syntax-parameter current-data #f)
+(define-syntax-parameter current-ptr #f)
+ 
+;; Every module in this language will make sure that it
+;; uses a fresh state.
+(define-syntax-rule (my-module-begin body ...)
+  (#%plain-module-begin
+    (let-values ([(fresh-data fresh-ptr) (new-state)])
+       (syntax-parameterize
+            ([current-data
+              (make-rename-transformer #'fresh-data)]
+             [current-ptr
+              (make-rename-transformer #'fresh-ptr)])
+           body ...))))
+ 
+(define-syntax-rule (greater-than)
+  (increment-ptr current-data current-ptr))
+ 
+(define-syntax-rule (less-than)
+  (decrement-ptr current-data current-ptr))
+ 
+(define-syntax-rule (plus)
+  (increment-byte current-data current-ptr))
+ 
+(define-syntax-rule (minus)
+  (decrement-byte current-data current-ptr))
+ 
+(define-syntax-rule (period)
+  (write-byte-to-stdout current-data current-ptr))
+ 
+(define-syntax-rule (comma)
+  (read-byte-from-stdin current-data current-ptr))
+ 
+(define-syntax-rule (brackets body ...)
+  (loop current-data current-ptr body ...))
+}|}
+
+
+Ok, so this change is pretty mechanical.  However, it does have a
+consequence: it means that our use of the semantics is a bit more
+restricted, because we give each form (@racket[increment-ptr],
+@racket[decrement-ptr], ...) an identifier for the @racket[ptr],
+because some of the rules will @racket[set!] the value of the
+identifier.  That is, to use the semantics, we've got to first bind
+the state variables,
+@racketblock[(let-values ([(data ptr) (new-state)]) ...)]
+and then use @racket[data] and @racket[ptr]
+consistently in the semantics.  In a sense, the semnatics now treat
+its arguments as reference variables.
+
+
+In any case, what does our benchmark tell us about this optimization?
+
+@verbatim|{
+$ raco make prime.rkt && (echo 100 | time racket prime.rkt)
+raco make prime.rkt && (echo 100 | time racket prime.rkt)
+Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
+1.13user 0.09system 0:01.30elapsed 94%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+10095minor)pagefaults 0swaps
+}|
+
+
+Ok, we're down to about a second plus a little more.
+
+
+
+
+
+
+@subsection{TODO}
+
+
 
 (2011/6/20: THE FOLLOWING TEXT IS A WORK IN PROGRESS: I need to add more content.  In
 particular, I need to talk about the following:
 @itemlist[
 
-
-
-@item{Using macros will allow Racket's underlying compiler to do more
-inlining.  Our semantics currently use function calls for almost all
-of the operations (except for @racket[loop]).  We can use macros to
-get effective inlining.  This will make the generated code get larger,
-but it can be worth it.}
 
 
 @item{Using @racketmodname[racket/unsafe/ops] allows us to get us
