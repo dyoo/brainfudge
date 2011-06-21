@@ -1042,17 +1042,17 @@ directly, and when we use it in @racket[(say-your-name)] for the first
 time, we're seeing this default in place.
 
 However, we make things more interesting (and a little more
-confusing!) in the second use of @racket[say-your-name]: we create a
-variable binding, and then use @racket[syntax-parameterize] to reroute
-every use of @racket[name], syntactically, with a use of
-@racket[the-hero], within the lexical boundaries of the
-@racket[syntax-parameterize]'s body.  Within that boundary, it's
+confusing!) in the second use of @racket[say-your-name]: we use
+@racket[let] to create a variable binding, and then use
+@racket[syntax-parameterize] to reroute every use of @racket[name],
+syntactically, with a use of @racket[the-hero].  Within the boundary
+defined at the @racket[syntax-parameterize]'s body, @racket[name] is
 magically transformed!  That's why we can see @racket["Homerun"] in
 the second use of @racket[(say-your-name)].
 
 
 Yet, where we use it from @racket[outside-the-barrier], @racket[name]
-takes on the default.  Why?
+still takes on the default.  Why?
 
 Let's go through the macro expanding process by hand, and wherever we
 see @racket[(say-your-name)], let's replace with the @racket[(printf
@@ -1093,7 +1093,13 @@ Ah!  So the use of @racket[name] that's introduced by
 @racket[say-your-name] is within the lexical boundaries of the
 @racket[syntax-parameterize] form.  But @racket[outside-the-barrier]
 is a plain, vanilla function, and because it's not a macro, it doesn't
-inline itself into the @racket[syntax-parameterize]'s body.
+inline itself into the @racket[syntax-parameterize]'s body.  We can
+compare this with the more dynamic behavior of @racket[parameterize],
+and see that this difference is what makes
+@racket[syntax-parameterize] different from @racket[parameterize].
+Well, we could tell that they're different just from the names... but
+the behavior we're seeing here makes it more clear just what that
+difference is.
 
 
 
@@ -1157,7 +1163,6 @@ previous contents.
 }|}
 
 
-
 What effect does this change alone make to our performance on
 @tt{brainf*ck} prime generation?  Let's cross our fingers!
 
@@ -1169,10 +1174,24 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 }|
 
 
-
 Now that's more like it!  Down from thirty-seven seconds to about six
-and a half.  Nice.  But now ambition rears its head and whispers to
-us: can we make the compiled code go even faster?
+and a half.  Nice.  When we compare this versus the previous
+implementation of the language, we might laugh ruefully: we just got
+rid of a few more parentheses.  But of course, that's not what we
+truly did.  What in the world just happened?
+
+
+Semantically, we applied a fairly large change to the implementation.
+Let's summarize exactly what we did: we had used @racket[parameterize]
+to maintain local state within the dynamic extent of our module's
+body.  Hoever, we don't need the full power of dynamic scope: a
+simpler (and cheaper!) lexical scoping mechanism is sufficient for our
+purposes.
+
+
+
+But now ambition rears its head and whispers to us: can we make the
+compiled code go even faster?
 
 
 
