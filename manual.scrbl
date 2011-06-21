@@ -5,7 +5,8 @@
           planet/resolver
           scribble/eval
           racket/sandbox
-          (for-label racket/base))
+          (for-label racket/base)
+	  (for-label racket/stxparam))
 
 @title{F*dging up a Racket}
 @author+email["Danny Yoo" "dyoo@cs.wpi.edu"]
@@ -878,7 +879,8 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 
 Thirty-seven seconds.  Wow.  Ouch.
 
-If we take a honest, hard look, we have to admit that something is
+
+If we take a honest, hard look, we have to admit that something must be
 seriously wrong here.  Aren't interpreters supposed to be slower than
 compilers?  Isn't Racket a
 @link["http://docs.racket-lang.org/guide/performance.html"]{JIT-compiled
@@ -891,16 +893,213 @@ Ooops.
 
 Let's fix that.
 
+
+@subsection{Staring into the hot-spot}
+
+If we look a little closely into our implementation, we might notice
+something funny.  Each of the forms in @filepath{language.rkt} refer
+to the @racket[current-state] parameter: we use the parameter to make
+sure the other forms in the language use the same
+@racket[current-state] value.  And of course we want this kind of
+localized behavior, to prevent the kind of interference that might
+happen if two @tt{brainf*ck} programs run.
+
+... But every use of the parameter appears to be a function call.
+Just how bad is that?  Let's see.  We can fire up our trusty DrRacket
+and try the following program in our Interactions window:
+
+@interaction[#:eval my-evaluator
+(require rackunit)
+(define my-parameter (make-parameter (box 0)))
+(time
+ (parameterize ([my-parameter (box 0)])
+   (for ([x (in-range 10000000)])
+     (set-box! (my-parameter) 
+               (add1 (unbox (my-parameter)))))
+   (check-equal? (unbox (my-parameter)) 10000000)))]
+
+Hmmmm...  Ok, what if we didn't have the parameter, and just accessed
+the variable more directly?
+
+@interaction[#:eval my-evaluator
+(require rackunit)
+(time
+ (let ([my-parameter (box 0)])
+   (for ([x (in-range 10000000)])
+     (set-box! my-parameter 
+               (add1 (unbox my-parameter))))
+   (check-equal? (unbox my-parameter) 10000000)))]
+
+In the immortal words of Neo: @emph{Whoa}.  Ok, we've got ourselves a
+target!
+
+
+Let's take a look again at the definition of our
+@racket[my-module-begin] in @filepath{language.rkt}.
+
+@codeblock|{
+(define current-state (make-parameter (new-state)))
+
+(define-syntax-rule (my-module-begin body ...)
+  (#%plain-module-begin
+    (parameterize ([current-state (new-state)])
+       body ...)))}|
+
+Let's replace the use of the @racket[parameterize] here with a simpler
+@racket[let].  Now we've got something like this:
+
+@codeblock|{
+(define-syntax-rule (my-module-begin body ...)
+  (#%plain-module-begin
+    (let ([my-fresh-state (new-state)])
+       body ...)))}|
+
+But now we have a small problem: we want the rest of the inner
+@racket[body] forms to syntactically recognize and re-route any use of
+@racket[current-state] with this @racket[my-fresh-state] binding.  But
+we certainly can't just rewrite the whole @filepath{language.rkt} and
+replace uses of @racket[current-state] with @racket[my-fresh-state],
+because @racket[my-fresh-state] isn't a global variable!  What do we
+do?
+
+There's a small tool in the Racket library that allows us to solve
+this problem: it's called a
+@link["http://docs.racket-lang.org/reference/stxparam.html"]{syntax
+parameter}.  A syntax parameter is similar to the reviled parameter
+that we talked about earlier, except that it works
+@emph{syntactically} rather than @emph{dynamically}.  A common use of
+a syntax parameter is to let us wrap a certain area in our code, and
+say: ``Any where this identifier shows up, rename it to use this
+variable''.
+
+Let's see a demonstration of these in action, because all this talk
+is a little abstract.  What do these syntax parameters really
+do for us?
+
+@interaction[#:eval my-evaluator
+(require racket/stxparam)
+
+(define-syntax-parameter name 
+  (lambda (stx)
+    #'"Madoka"))
+
+name
+
+(define-syntax-rule (say-your-name)
+  (printf "Your name is ~a\n" name))
+
+(define (outside-the-barrier)
+  (printf "outside-the-barrier says: ")
+  (say-your-name))
+
+
+(say-your-name)
+
+(let ([the-hero "Homerun"])
+  (syntax-parameterize 
+        ([name (make-rename-transformer #'the-hero)])
+     (say-your-name)
+     (outside-the-barrier)))
+]
+
+It helps to keep in mind that, in Racket, macros are, fundamentally,
+functions that take an input syntax, and produce an output syntax.
+Here, we define @racket[name] to be a macro that expands to
+@racket[#'"Madoka"] by default.  When we use @racket[name] directly,
+and when we use it in @racket[(say-your-name)] for the first time,
+we're seeing this default in place.
+
+However, we make things more interesting in the second use of
+@racket[say-your-name]: we create a variable binding, and then use
+@racket[syntax-parameterize] to reroute every use of @racket[name],
+syntactically, with a use of @racket[the-hero], within the lexical
+boundaries of the @racket[syntax-parameterize]'s body.  Within that
+boundary, it's magically transformed!  That's why we can see
+@racket["Homerun"] in the second use of @racket[(say-your-name)].  Yet
+still, outside the boundary, where we use it from
+@racket[outside-the-barrier], @racket[name] takes on the default.
+
+
+Whew!  Frankly, all of this is a little magical.  But the hilarious
+thing, despite all this verbiage about syntax parameters, is that the
+implementation of the language looks almost exactly the same as
+before.  Here's a version of the language that uses these syntax
+parameters; let's call it @filepath{faster-language.rkt}.
+
+@filebox["faster-language.rkt"]{
+                          @codeblock|{
+#lang racket
+
+(require "semantics.rkt"
+         racket/stxparam)
+
+(provide greater-than
+         less-than
+         plus
+         minus
+         period
+         comma
+         brackets
+         (rename-out [my-module-begin #%module-begin]))
+
+;; The current-state is a syntax parameter used by the
+;; rest of this language.
+(define-syntax-parameter current-state #f)
+
+;; Every module in this language will make sure that it
+;; uses a fresh state.
+(define-syntax-rule (my-module-begin body ...)
+  (#%plain-module-begin
+    (let ([fresh-state (new-state)])
+       (syntax-parameterize 
+            ([current-state
+              (make-rename-transformer #'fresh-state)])
+           body ...))))
+
+(define-syntax-rule (greater-than)
+  (increment-ptr current-state))
+
+(define-syntax-rule (less-than)
+  (decrement-ptr current-state))
+
+(define-syntax-rule (plus)
+  (increment-byte current-state))
+
+(define-syntax-rule (minus)
+  (decrement-byte current-state))
+
+(define-syntax-rule (period)
+  (write-byte-to-stdout current-state))
+
+(define-syntax-rule (comma)
+  (read-byte-from-stdin current-state))
+
+(define-syntax-rule (brackets body ...)
+  (loop current-state body ...))
+}|}
+
+
+
+
+
+(WORK IN PROGRESS: I need to rerun the primes benchmark at this point
+and see how much of an improvement we get out of this)
+
+
+
+
+
+
 (2011/6/20: THE FOLLOWING TEXT IS A WORK IN PROGRESS: I need to add more content.  In
 particular, I need to talk about the following:
 @itemlist[
-
 
 @item{The crucial issue: the use of parameters in a hot-spot is what's
 killing performance.  Using a more syntactic notion of parameter, with
 @racketmodname[racket/stxparam], rather than the runtime parameters,
 will get us a many-fold performance boost over our original
 implementation.}
+
 
 @item{Using macros will allow Racket's underlying compiler to do more
 inlining.  Our semantics currently use function calls for almost all
