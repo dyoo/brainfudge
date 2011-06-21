@@ -1040,6 +1040,7 @@ see @racket[(say-your-name)], let's replace with the @racket[(printf
   (say-your-name))
 ]
 we really mean:
+@racketblock[
 (define (outside-the-barrier)
   (printf "outside-the-barrier says: ")
   (printf "Your name is ~a\n" name))
