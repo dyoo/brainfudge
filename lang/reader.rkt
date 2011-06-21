@@ -1,5 +1,5 @@
 #lang s-exp syntax/module-reader
-(planet dyoo/bf/language)
+(planet dyoo/bf/unchecked-language)   ;; switched from (planet dyoo/bf/language)
 #:read my-read
 #:read-syntax my-read-syntax
 
