@@ -15,6 +15,9 @@
 (provide (all-defined-out))
 
 
+(define-syntax MAX-DATA-SIZE
+  (lambda (stx) #'30000))
+
 
 ;; We use a customized error structure that supports
 ;; source location reporting.
@@ -29,7 +32,7 @@
 ;; Creates a new state, with a byte array of 30000 zeros, and
 ;; the pointer at index 0.
 (define (new-state) 
-  (values (make-bytes 30000 0)
+  (values (make-bytes MAX-DATA-SIZE 0)
           0))
 
 
@@ -47,7 +50,7 @@
 (define-syntax-rule (increment-ptr data ptr loc)
   (begin
     (set! ptr (unsafe-fx+ ptr 1))
-    (when (unsafe-fx>= ptr (unsafe-bytes-length data))
+    (when (unsafe-fx>= ptr MAX-DATA-SIZE)
       (raise-range-errors! a-state 'increment-ptr loc))))
 
 
@@ -78,7 +81,7 @@
                                      0
                                      v))))
 
-;; we know how to do loops!
+;; Loops
 (define-syntax-rule (loop data ptr body ...)
   (unless (unsafe-fx= (unsafe-bytes-ref data ptr)
                       0)
