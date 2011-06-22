@@ -1,6 +1,8 @@
-#lang racket
+#lang racket/base
 
-(require "semantics.rkt")
+(require "semantics.rkt"
+         racket/stxparam
+         (for-syntax racket/base))
 
 (provide greater-than
          less-than
@@ -11,16 +13,39 @@
          brackets
          (rename-out [my-module-begin #%module-begin]))
 
-;; The current-state is a parameter used by
-;; the rest of the language.
-(define current-state (make-parameter (new-state)))
+
+
+;; We define a syntax parameter called current-state here.
+;; This cooperates with the other forms in this language.  See
+;; my-module-begin's comments for more details.
+(define-syntax-parameter current-data #f)
+(define-syntax-parameter current-ptr #f)
+
+
+
 
 ;; Every module in this language will make sure that it
-;; uses a fresh state.
-(define-syntax-rule (my-module-begin body ...)
-  (#%plain-module-begin
-   (parameterize ([current-state (new-state)])
-     (begin body ... (void)))))
+;; uses a fresh state.  We create one, and then within
+;; the lexical context of a my-module-begin, all the
+;; other forms will refer to current-state.
+(define-syntax (my-module-begin stx)
+  (syntax-case stx ()
+    [(_ body ...)
+     (syntax/loc stx
+       (#%plain-module-begin
+        (let-values ([(fresh-state fresh-ptr) (new-state)])
+
+          ;; Here are the mechanics we're using to get all the other
+          ;; forms to use this fresh state.
+          ;;
+          ;; We use the syntax parameter library to make
+          ;; any references to current-state within the body to
+          ;; syntactically re-route to the fresh-state we create here.
+          (syntax-parameterize ([current-data
+                                 (make-rename-transformer #'fresh-state)]
+                                [current-ptr
+                                 (make-rename-transformer #'fresh-ptr)])
+            (begin body ... (void))))))]))
 
 
 ;; In order to produce good runtime error messages
@@ -37,25 +62,37 @@
   (syntax-case stx ()
     [(_)
      (quasisyntax/loc stx
-       (increment-ptr (current-state) #'#,stx))]))
+       (increment-ptr current-data current-ptr
+                      (srcloc '#,(syntax-source stx)
+                              '#,(syntax-line stx)
+                              '#,(syntax-column stx)
+                              '#,(syntax-position stx)
+                              '#,(syntax-span stx))))]))
+
 
 (define-syntax (less-than stx)
   (syntax-case stx ()
     [(_)
      (quasisyntax/loc stx
-       (decrement-ptr (current-state) #'#,stx))]))
+       (decrement-ptr current-data current-ptr
+                      (srcloc '#,(syntax-source stx)
+                              '#,(syntax-line stx)
+                              '#,(syntax-column stx)
+                              '#,(syntax-position stx)
+                              '#,(syntax-span stx))))]))
+
 
 (define-syntax-rule (plus)
-  (increment-byte (current-state)))
+  (increment-byte current-data current-ptr))
 
 (define-syntax-rule (minus)
-  (decrement-byte (current-state)))
+  (decrement-byte current-data current-ptr))
 
 (define-syntax-rule (period)
-  (write-byte-to-stdout (current-state)))
+  (write-byte-to-stdout current-data current-ptr))
 
 (define-syntax-rule (comma)
-  (read-byte-from-stdin (current-state)))
+  (read-byte-from-stdin current-data current-ptr))
 
 (define-syntax-rule (brackets body ...)
-  (loop (current-state) body ...))
+  (loop current-data current-ptr body ...))
