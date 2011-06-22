@@ -860,7 +860,7 @@ Furthermore, thanks to those who commented from the
 Reddit thread: they helped isolate a performance issue regarding
 parameters and motivated the following section on optimization.  David
 Van Horn pointed out how to use @link["http://pypy.org"]{PyPy}'s JIT
-properly, the results of which amazing.  Sam Tobin-Hochstadt provided
+properly, with amazing results.  Sam Tobin-Hochstadt provided
 a few optimization suggestions, many of which have are in the main
 @racketmodname[(planet dyoo/bf)] implementation.
 
