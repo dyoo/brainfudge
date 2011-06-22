@@ -6,7 +6,8 @@
           scribble/eval
           racket/sandbox
           (for-label racket/base)
-	  (for-label racket/stxparam))
+	  (for-label racket/stxparam)
+          (for-label racket/unsafe/ops))
 
 @title{F*dging up a Racket}
 @author+email["Danny Yoo" "dyoo@cs.wpi.edu"]
@@ -1867,7 +1868,8 @@ their @emph{safe} equivalents, the ones in @racketmodname[racket/unsafe/ops] don
 do type tests on their inputs.
 
 This can reduce some runtime costs.  For example, if we're very careful, we can use 
-@racket[unsafe-fx+] on our @racket[data] and @racket[ptr] values: since we're explicitly
+@racket[unsafe-fx+] and @racket[unsafe-vector-ref] on
+our @racket[data] and @racket[ptr] values: since we're explicitly
 managing the state of our @tt{brainf*ck} machine, we know all the input types, and 
 can guarantee the input types... as long as we don't mess it up.
 
@@ -1897,8 +1899,8 @@ Here's what the @filepath{semantics.rkt} look like when we use the unsafe operat
 (define-struct (exn:fail:out-of-bounds exn:fail)
   (srcloc)
   #:property prop:exn:srclocs
-             (lambda (a-struct)
-               (list (exn:fail:out-of-bounds-srcloc a-struct))))
+  (lambda (a-struct)
+    (list (exn:fail:out-of-bounds-srcloc a-struct))))
 
 ;; Provides two values: a byte array of 30000 zeros, and
 ;; the pointer at index 0.
@@ -1929,23 +1931,27 @@ Here's what the @filepath{semantics.rkt} look like when we use the unsafe operat
 ;; increment the byte at the data pointer
 (define-syntax-rule (increment-byte data ptr)
   (vector-set! data ptr 
-               (unsafe-fxmodulo (unsafe-fx+ (vector-ref data ptr) 1)
+               (unsafe-fxmodulo (unsafe-fx+ 
+                                 (vector-ref data ptr) 1)
                                 256)))
  
 ;; decrement the byte at the data pointer
 (define-syntax-rule (decrement-byte data ptr)
   (vector-set! data ptr 
-               (unsafe-fxmodulo (unsafe-fx- (vector-ref data ptr) 1)
+               (unsafe-fxmodulo (unsafe-fx-
+                                 (vector-ref data ptr) 1)
                                 256)))
  
 ;; print the byte at the data pointer
 (define-syntax-rule (write-byte-to-stdout data ptr)
-  (write-byte (unsafe-vector-ref data ptr) (current-output-port)))
+  (write-byte (unsafe-vector-ref data ptr)
+              (current-output-port)))
  
 ;; read a byte from stdin into the data pointer
 (define-syntax-rule (read-byte-from-stdin data ptr)
   (unsafe-vector-set! data ptr 
-                      (let ([a-value (read-byte (current-input-port))])
+                      (let ([a-value (read-byte
+                                      (current-input-port))])
                         (if (eof-object? a-value)
                             0
                             a-value))))
@@ -1981,8 +1987,7 @@ just over one.
 
 @section{Next steps}
 
-There's much more content about building languages in the Racket Guide; hopefully, this
-tutorial helps fertilize the grounds of other hackers who'd love to try their hand
-at language design and implementation.
+There's much more content about @link["http://docs.racket-lang.org/guide/languages.html"]{building languages} in the @link["http://docs.racket-lang.org/guide/index.html"]{Racket Guide}; hopefully, this
+tutorial helps other hackers who'd love to try their hand at language design and implementation.
 
-Also, please feel free to ask questions on the Racket Users mailing list; we'll be happy to talk!
+Also, please feel free to ask questions on the @link["http://lists.racket-lang.org/users/"]{Racket Users mailing list}; we'll be happy to talk!
