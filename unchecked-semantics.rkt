@@ -30,7 +30,7 @@
 ;; Creates a new state, with a byte array of 30000 zeros, and
 ;; the pointer at index 0.
 (define (new-state) 
-  (values (make-vector 30000 0)
+  (values (make-bytes 30000 0)
           0))
 
 
@@ -48,7 +48,7 @@
 (define-syntax-rule (increment-ptr data ptr loc)
   (begin
     (set! ptr (unsafe-fx+ ptr 1))
-    (when (unsafe-fx>= ptr (unsafe-vector-length data))
+    (when (unsafe-fx>= ptr (unsafe-bytes-length data))
       (raise-range-errors! a-state 'increment-ptr loc))))
 
 
@@ -62,19 +62,19 @@
 
 ;; increment the byte at the data pointer
 (define-syntax-rule (increment-byte data ptr)
-  (unsafe-vector-set! data ptr (unsafe-fx+ (unsafe-vector-ref data ptr) 1)))
+  (unsafe-bytes-set! data ptr (unsafe-fx+ (unsafe-bytes-ref data ptr) 1)))
 
 ;; decrement the byte at the data pointer
 (define-syntax-rule (decrement-byte data ptr)
-  (unsafe-vector-set! data ptr (unsafe-fx- (unsafe-vector-ref data ptr) 1)))
+  (unsafe-bytes-set! data ptr (unsafe-fx- (unsafe-bytes-ref data ptr) 1)))
 
 ;; print the byte at the data pointer
 (define-syntax-rule (write-byte-to-stdout data ptr)
-  (write-byte (unsafe-vector-ref data ptr) (current-output-port)))
+  (write-byte (unsafe-bytes-ref data ptr) (current-output-port)))
 
 ;; read a byte from stdin into the data pointer
 (define-syntax-rule (read-byte-from-stdin data ptr)
-  (unsafe-vector-set! data ptr (let ([v (read-byte (current-input-port))])
+  (unsafe-bytes-set! data ptr (let ([v (read-byte (current-input-port))])
                                  (if (eof-object? v)
                                      0
                                      v))))
@@ -82,7 +82,7 @@
 ;; we know how to do loops!
 (define-syntax-rule (loop data ptr body ...)
   (let loop ()
-    (unless (unsafe-fx= (unsafe-vector-ref data ptr)
+    (unless (unsafe-fx= (unsafe-bytes-ref data ptr)
                         0)
       body ...
       (loop))))
@@ -96,22 +96,22 @@
 ;; Simple exercises.
 (let-values ([(data ptr) (new-state)])
   (increment-byte data ptr)
-  (check-equal? 1 (vector-ref data 0))
+  (check-equal? 1 (bytes-ref data 0))
   (increment-byte data ptr)
-  (check-equal? 2 (vector-ref data 0))
+  (check-equal? 2 (bytes-ref data 0))
   (decrement-byte data ptr)
-  (check-equal? 1 (vector-ref data 0)))
+  (check-equal? 1 (bytes-ref data 0)))
 
 ;; pointer movement
 (let-values ([(data ptr) (new-state)])
   (increment-ptr data ptr #f)
   (increment-byte data ptr)
-  (check-equal? 0 (vector-ref data 0))
-  (check-equal? 1 (vector-ref data 1))
+  (check-equal? 0 (bytes-ref data 0))
+  (check-equal? 1 (bytes-ref data 1))
   (decrement-ptr data ptr #f)
   (increment-byte data ptr)
-  (check-equal? 1 (vector-ref data 0))
-  (check-equal? 1 (vector-ref data 1)))
+  (check-equal? 1 (bytes-ref data 0))
+  (check-equal? 1 (bytes-ref data 1)))
 
 ;; make sure standard input is doing something
 (let-values ([(data ptr) (new-state)])
@@ -122,14 +122,14 @@
     (read-byte-from-stdin data ptr)
     (increment-ptr data ptr #f)
     (read-byte-from-stdin data ptr))
-  (check-equal? 3 (vector-ref data 0))
-  (check-equal? 1 (vector-ref data 1))
-  (check-equal? 4 (vector-ref data 2)))
+  (check-equal? 3 (bytes-ref data 0))
+  (check-equal? 1 (bytes-ref data 1))
+  (check-equal? 4 (bytes-ref data 2)))
 
 
 ;; make sure standard output is doing something
 (let-values ([(data ptr) (new-state)])
-  (set! data (vector 80 76 84))
+  (set! data (bytes 80 76 84))
   (let ([simulated-stdout (open-output-string)])
     (parameterize ([current-output-port simulated-stdout])
       (write-byte-to-stdout data ptr)
@@ -142,7 +142,7 @@
 
 ;; Let's see that we can clear.
 (let-values ([(data ptr) (new-state)])
-  (set! data (vector 0 104 101 108 112 109 101 105
+  (set! data (bytes 0 104 101 108 112 109 101 105
                      109 109 101 108 116 105 110 103 ))
   (set! ptr 15)
   ;; [ [-] < ]
@@ -151,4 +151,4 @@
         (decrement-ptr data ptr #f))
   
   (check-equal? 0 ptr)
-  (check-equal? (make-vector 16 0) data))
+  (check-equal? (make-bytes 16 0) data))
