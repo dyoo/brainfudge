@@ -874,11 +874,13 @@ marketeers out to spread the Word.  We kick back, lazily twiddle our
 thumbs, and await the adoration of the global @tt{brainf*ck}
 community.
 
-To our dismay, someone brings up the impossible notion that our
+To our dismay, someone brings up the fact that our
 implementation is
 @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/c20e7ka"]{slower}
-than an @link["https://bitbucket.org/brownan/pypy-tutorial/src/tip/example1.py"]{interpreter} written in another language.  What?!  Blasphemy!  But no: the Internet is absolutely right here.  Let's run the numbers.
-We can grab another @tt{brainf*ck} implementation and try it on a good
+than an @link["https://bitbucket.org/brownan/pypy-tutorial/src/tip/example1.py"]{interpreter} written in another language.  What?! 
+
+But the Internet is absolutely correct.  Let's run the numbers.
+We can grab another @tt{brainf*ck} implementation and try it on a
 benchmarking program, like the one that
 @link["https://github.com/dyoo/brainfudge/blob/master/examples/prime.rkt"]{generates
 prime numbers}.  Let's see what the competition looks like:
@@ -890,7 +892,10 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 0inputs+0outputs (0major+3554minor)pagefaults 0swaps
 }|
 
-Ok, about sixteen seconds.  Not bad.  Now let's look at our own performance.  We surely can't do worse, right?
+Ok, about sixteen seconds.  Not bad.  We're not even using their JIT, and
+they're still producing reasonable results.
+
+Now let's look at our own performance.  We surely can't do worse, right?
 
 @verbatim|{
 $ raco make prime.rkt && (echo 100 | time racket prime.rkt)
@@ -902,17 +907,24 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 Thirty-seven seconds.  Wow.  Ouch.
 
 
-If we take a honest, hard look, we have to admit that something must be
-seriously wrong here.  Aren't interpreters supposed to be slower than
+Outrageous!  Aren't interpreters supposed to be slower than
 compilers?  Isn't Racket a
 @link["http://docs.racket-lang.org/guide/performance.html"]{JIT-compiled
 language}?  What the heck happened?
 
 
-We followed the creed that says @emph{Get it right, then get it
-fast}... except that we forgot the second part about getting it fast.
-Ooops.  So let's fix that.
+We tried to follow the creed that says @emph{Get it right, then get it
+fast}... except that we didn't.  We forgot the second part about getting it fast. 
+Just because something is compiled and driven by a JIT doesn't guarantee
+that the generated code's going to perform particularly well, and the benchmark above
+shows that something strange is happening.
 
+
+So let's try our hand at optimization!  We may not get the raw 
+performance of an impressive project like @link["http://pypy.org/"]{PyPy}, but we
+still should be able to perform reasonably well.  Furthermore, we will
+including some error handling that uses the source locations we constructed in our
+parser, in order to precisely point out runtime errors in the original source.
 
 
 As a warning, if you ran through the previous sections, you may want
@@ -1198,7 +1210,9 @@ instinctively.
 
 
 But now ambition rears its head and whispers to us: can we make the
-compiled code go even faster?
+code go faster?  At some point, we'll hit diminishing returns, but let's see
+what other obvious things we can do, and observe what happens to the
+benchmark results as we optimize.
 
 
 
@@ -1282,7 +1296,7 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 }|
 
 Ok, inlining each of the definitions of the semantics gives us a
-little more performance, at the cost of some code expansion.
+little more performance, at the cost of some code expansion.  But not a large one.
 
 
 
@@ -1432,15 +1446,15 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 }|
 
 
-Ok, we're down to about a second plus a little more.
+That seems like a more substantial optimization!  Ok, we're down to about a
+second plus a little more.
 
 
 
 @subsection{Strapping on the safety goggles}
 
-Before we go further in this optimization question, we should ask
-ourselves: is our language actually doing the right thing?  We might
-consider the following semantic situations:
+We should ask ourselves: is our language actually doing the right thing?
+We might consider the following situations:
 
 @itemlist[
 
@@ -1454,8 +1468,9 @@ the boundaries of a byte.}
 the data array.}
 ]
 
-Yikes.  We should have looked at this earlier!  None of these are
-addressed by our current implementation, and we'd better correct these
+Oh dear.  We should have looked at this earlier!  How shameful!
+None of these are addressed by our current implementation.
+We'd better correct these
 flaws before continuing forward, before anyone else notices.  And even
 if this costs us a few millseconds in performance, it's certainly
 worth knowing exactly what should happen in these situations.
@@ -1546,7 +1561,8 @@ but many, perhaps most, implementations behave in a manner consistent
 with a C pointer wandering off into arbitrary memory.)}
 
 Wait.  Stop right there.  It is absolutely unacceptable for us to
-crash.  Even we @tt{brainf*ck} programmers must have our standards.
+just have the pointer wander out-of-bounds like that.  
+Even we @tt{brainf*ck} programmers must have our standards.
 Instead, let's make it a guaranteed runtime error that halts
 evaluation.  Moreover, let's make sure the error message points
 directly at the offending instruction in the source text.
@@ -1836,40 +1852,120 @@ And if we try running the following grumpy-looking program,
 }|
 
 DrRacket will properly highlight the second @litchar{<} at the left
-edge of the face's mouth.  Ok, so we can produce runtime errors with
-precise highlighting.
-
-
-@subsection{TODO}
+edge of the face's mouth.  Hurrah!
 
 
 
-(2011/6/20: THE FOLLOWING TEXT IS A WORK IN PROGRESS: I need to add more content.  In
-particular, I need to talk about the following:
-@itemlist[
+
+@subsection{Running with scissors}
+
+There's one obvious thing we haven't done yet: we haven't taken a look at
+@racketmodname[racket/unsafe/ops].  @racketmodname[racket/unsafe/ops] provides
+functions that act like @racket[+], @racket[vector-ref], and
+many of the the other functions we've used in @filepath{semantics.rkt}.  However, unlike
+their @emph{safe} equivalents, the ones in @racketmodname[racket/unsafe/ops] don't
+do type tests on their inputs.
+
+This can reduce some runtime cost.  For example, if we're very careful, we can use 
+@racket[unsafe-fx+] on our @racket[data] and @racket[ptr] values: since we're explicitly
+managing the state of our @tt{brainf*ck} machine, we know all the input types, and 
+can guarantee the input types... as long as we don't mess it up.
+
+The flip side is that it's easy to mess up.  For example, if our mind wanders to that
+pleasant afternoon hiking in the mountains, and we quickly type out:
+@codeblock{
+;; WARNING WARNING DO NOT ACTUALLY EXECUTE THIS!!!
+(unsafe-vector-ref i vec)}
+then it's very likely that we'll crash the Racket VM, and any program running under 
+the VM at the time.  That would make our @tt{brainf*ck}  users unhappy with us, to say the least.
+
+So we need to tread very, very carefully.
+
+Here's what the @filepath{semantics.rkt} look like when we use the unsafe operations.
+@filebox["semantics.rkt"]{
+@codeblock|{
+#lang racket
+
+;; unsafe operations for speed.
+;; But be very careful!
+(require racket/unsafe/ops)  
+
+(provide (all-defined-out))
+ 
+;; We use a customized error structure that supports
+;; source location reporting.
+(define-struct (exn:fail:out-of-bounds exn:fail)
+  (srcloc)
+  #:property prop:exn:srclocs
+             (lambda (a-struct)
+               (list (exn:fail:out-of-bounds-srcloc a-struct))))
+
+;; Provides two values: a byte array of 30000 zeros, and
+;; the pointer at index 0.
+(define-syntax-rule (new-state)
+  (values (make-vector 30000 0)
+          0))
+ 
+;; increment the data pointer
+(define-syntax-rule (increment-ptr data ptr loc-sexp)
+  (begin
+    (set! ptr (unsafe-fx+ ptr 1))
+    (when (>= ptr (unsafe-vector-length data))
+      (raise (make-exn:fail:out-of-bounds 
+              "out of bounds"
+              (current-continuation-marks)
+              (apply srcloc loc-sexp))))))
+
+;; decrement the data pointer
+(define-syntax-rule (decrement-ptr data ptr loc-sexp)
+  (begin
+    (set! ptr (unsafe-fx- ptr 1))
+    (when (< ptr 0)
+      (raise (make-exn:fail:out-of-bounds 
+              "out of bounds"
+              (current-continuation-marks)
+              (apply srcloc loc-sexp))))))
+ 
+;; increment the byte at the data pointer
+(define-syntax-rule (increment-byte data ptr)
+  (vector-set! data ptr 
+               (unsafe-fxmodulo (unsafe-fx+ (vector-ref data ptr) 1)
+                                256)))
+ 
+;; decrement the byte at the data pointer
+(define-syntax-rule (decrement-byte data ptr)
+  (vector-set! data ptr 
+               (unsafe-fxmodulo (unsafe-fx- (vector-ref data ptr) 1)
+                                256)))
+ 
+;; print the byte at the data pointer
+(define-syntax-rule (write-byte-to-stdout data ptr)
+  (write-byte (unsafe-vector-ref data ptr) (current-output-port)))
+ 
+;; read a byte from stdin into the data pointer
+(define-syntax-rule (read-byte-from-stdin data ptr)
+  (unsafe-vector-set! data ptr 
+                      (let ([a-value (read-byte (current-input-port))])
+                        (if (eof-object? a-value)
+                            0
+                            a-value))))
+ 
+;; we know how to do loops!
+(define-syntax-rule (loop data ptr body ...)
+  (let loop ()
+    (unless (= (unsafe-vector-ref data ptr)
+               0)
+      body ...
+      (loop))))
+            }|
+}
 
 
-@item{Using @racketmodname[racket/unsafe/ops] allows us to get us
-closer to the machine.  But this makes us much more responsible for
-getting things right.}
-
-]
 
 
+@subsection{A final accounting}
 
-I'll add text shortly that describes each of these items in detail.  If
-you want to see a preview of the code before then, please visit the
-@link["https://github.com/dyoo/brainfudge"]{github repository} and
-take a look at
-@link["https://github.com/dyoo/brainfudge/blob/master/unchecked-semantics.rkt"]{@filepath{unchecked-semantics.rkt}}
-and
-@link["https://github.com/dyoo/brainfudge/blob/master/unchecked-language.rkt"]{@filepath{unchecked-language.rkt}}. )
-
-...
-
-
-What's the effect of applying the combination of all these optimizations?  Well,
-let's see the numbers now!
+We can see the net effect of applying the combination of all these optimizations.
 
 @verbatim|{
 $ raco make prime.rkt && (echo 100 | time racket prime.rkt)
@@ -1878,4 +1974,15 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 0inputs+0outputs (0major+10366minor)pagefaults 0swaps
 }|
 
-Wow, that's much better.  We've gone from thirty-seven seconds to just over one.  Now that's cool.
+And that's not too bad of a result.  We've gone from thirty-seven seconds to
+just over one.
+
+
+
+@section{Next steps}
+
+There's much more content about building languages in the Racket Guide; hopefully, this
+tutorial helps fertilize the grounds of other hackers who'd love to try their hand
+at language design and implementation.
+
+Also, please feel free to ask questions on the Racket Users mailing list; we'll be happy to talk!
