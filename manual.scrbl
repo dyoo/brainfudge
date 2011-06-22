@@ -727,8 +727,8 @@ in that subdirectory, with the following content:
 (define (my-read-syntax src in)
   (parse-expr src in))
 }|}
-The second line of the file tells @racket[syntax/module-reader] that any syntax objects that
-come out are intended to take on their semantics from our language.  @racket[syntax/module-reader]
+Some of this is magic, so let's step through this.  The second line of the file tells @racket[syntax/module-reader] that any syntax objects that
+come out are intended to take on their semantics from our language module @filepath{language.rkt}.  @racket[syntax/module-reader]
 is predisposed to assume that programs are read using @racket[read] and @racket[read-syntax], so we
 override that default and plug in our @racket[parse-expr] function into place.
 
@@ -1212,7 +1212,7 @@ course, that's not what we truly did.  What in the world just
 happened?
 
 
-Let's summarize exactly what we did: earlier, we had used
+Let's summarize what we did: earlier, we had used
 @racket[parameterize] to maintain some shared local state within the
 dynamic extent of our module's body.  However, on reflection, we see
 that we don't need the full power of dynamic scope: a simpler (and
