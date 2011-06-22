@@ -2047,7 +2047,7 @@ implementation that's fairly straightforward, and integrates well with
 the umbrella of other languages and tools in Racket.
 
 
-It's one with which we can easily run language experiments.  What if
+It's one with which we can easily run experiments.  What if
 we wanted to run @tt{brainf*ck} programs in
 @link["http://docs.racket-lang.org/reference/places.html"]{parallel}?
 What if we want to run these programs under a restrictive
@@ -2058,6 +2058,9 @@ allow us to remove all those messy unsafe annotations in our
 semantics, while still removing the redundant type checks?
 
 And what if we want to look at other languages besides @tt{brainf*ck}?
+Now that we have a better understanding about how the Racket language
+toolchain works, how easy is it to implement a more realistic
+language?
 
 
 There's much more content about
