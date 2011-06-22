@@ -1,4 +1,4 @@
-#lang planet dyoo/bf2
+#lang planet dyoo/bf
       A mandelbrot set fractal viewer in brainf*** written by Erik Bosman
 +++++++++++++[->++>>>+++++>++>+<<<<<<]>>>>>++++++>--->>>>>>>>>>+++++++++++++++[[
 >>>>>>>>>]+[<<<<<<<<<]>>>>>>>>>-]+[>>>>>>>>[-]>]<<<<<<<<<[<<<<<<<<<]>>>>>>>>[-]+

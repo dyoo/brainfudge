@@ -1866,7 +1866,7 @@ many of the the other functions we've used in @filepath{semantics.rkt}.  However
 their @emph{safe} equivalents, the ones in @racketmodname[racket/unsafe/ops] don't
 do type tests on their inputs.
 
-This can reduce some runtime cost.  For example, if we're very careful, we can use 
+This can reduce some runtime costs.  For example, if we're very careful, we can use 
 @racket[unsafe-fx+] on our @racket[data] and @racket[ptr] values: since we're explicitly
 managing the state of our @tt{brainf*ck} machine, we know all the input types, and 
 can guarantee the input types... as long as we don't mess it up.
@@ -1877,7 +1877,7 @@ pleasant afternoon hiking in the mountains, and we quickly type out:
 ;; WARNING WARNING DO NOT ACTUALLY EXECUTE THIS!!!
 (unsafe-vector-ref i vec)}
 then it's very likely that we'll crash the Racket VM, and any program running under 
-the VM at the time.  That would make our @tt{brainf*ck}  users unhappy with us, to say the least.
+the VM at the time.  That would make our @tt{brainf*ck} users unhappy with us, to say the least.
 
 So we need to tread very, very carefully.
 
@@ -1910,7 +1910,7 @@ Here's what the @filepath{semantics.rkt} look like when we use the unsafe operat
 (define-syntax-rule (increment-ptr data ptr loc-sexp)
   (begin
     (set! ptr (unsafe-fx+ ptr 1))
-    (when (>= ptr (unsafe-vector-length data))
+    (when (unsafe-fx>= ptr (unsafe-vector-length data))
       (raise (make-exn:fail:out-of-bounds 
               "out of bounds"
               (current-continuation-marks)
@@ -1920,7 +1920,7 @@ Here's what the @filepath{semantics.rkt} look like when we use the unsafe operat
 (define-syntax-rule (decrement-ptr data ptr loc-sexp)
   (begin
     (set! ptr (unsafe-fx- ptr 1))
-    (when (< ptr 0)
+    (when (unsafe-fx< ptr 0)
       (raise (make-exn:fail:out-of-bounds 
               "out of bounds"
               (current-continuation-marks)
@@ -1953,8 +1953,8 @@ Here's what the @filepath{semantics.rkt} look like when we use the unsafe operat
 ;; we know how to do loops!
 (define-syntax-rule (loop data ptr body ...)
   (let loop ()
-    (unless (= (unsafe-vector-ref data ptr)
-               0)
+    (unless (unsafe-fx= (unsafe-vector-ref data ptr)
+                        0)
       body ...
       (loop))))
             }|
