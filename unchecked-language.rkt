@@ -1,7 +1,8 @@
-#lang racket
+#lang racket/base
 
 (require "unchecked-semantics.rkt"
-         racket/stxparam)
+         racket/stxparam
+         (for-syntax racket/base))
 
 (provide greater-than
          less-than

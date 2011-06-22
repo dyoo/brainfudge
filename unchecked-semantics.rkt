@@ -1,4 +1,4 @@
-#lang racket
+#lang racket/base
 
 ;; This is a second semantics for the language that tries to go for speed,
 ;; at the expense of making things a little more complicated.
@@ -7,12 +7,17 @@
 ;; to reduce the number of runtime checks.
 ;;
 ;; We also manage the state as two separate values.
+;;
+;; Tape out-of-bounds errors at runtime should be properly reported with
+;; source location.
 
 (require rackunit               ;; we want unit tests
-         racket/unsafe/ops)      ;; and we want raw, unsafe access for speed
+         racket/unsafe/ops      ;; and we want raw, unsafe access for speed
+         (for-syntax racket/base)) 
 
 
 (provide (all-defined-out))
+
 
 
 (define-syntax MAX-DATA-SIZE
