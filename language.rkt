@@ -33,19 +33,22 @@
     [(_ body ...)
      (syntax/loc stx
        (#%plain-module-begin
-        (let-values ([(fresh-state fresh-ptr) (new-state)])
-
-          ;; Here are the mechanics we're using to get all the other
-          ;; forms to use this fresh state.
-          ;;
-          ;; We use the syntax parameter library to make
-          ;; any references to current-state within the body to
-          ;; syntactically re-route to the fresh-state we create here.
-          (syntax-parameterize ([current-data
-                                 (make-rename-transformer #'fresh-state)]
-                                [current-ptr
-                                 (make-rename-transformer #'fresh-ptr)])
-            (begin body ... (void))))))]))
+        
+        (define (run)
+          (let-values ([(fresh-state fresh-ptr) (new-state)])
+            
+            ;; Here are the mechanics we're using to get all the other
+            ;; forms to use this fresh state.
+            ;;
+            ;; We use the syntax parameter library to make
+            ;; any references to current-state within the body to
+            ;; syntactically re-route to the fresh-state we create here.
+            (syntax-parameterize ([current-data
+                                   (make-rename-transformer #'fresh-state)]
+                                  [current-ptr
+                                   (make-rename-transformer #'fresh-ptr)])
+               (begin body ... (void)))))
+        (run)))]))
 
 
 ;; In order to produce good runtime error messages
