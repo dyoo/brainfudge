@@ -9,8 +9,7 @@
 ;; We also manage the state as two separate values.
 
 (require rackunit               ;; we want unit tests
-         racket/unsafe/ops      ;; and we want raw, unsafe access for speed
-         )
+         racket/unsafe/ops)      ;; and we want raw, unsafe access for speed
 
 
 (provide (all-defined-out))
@@ -62,11 +61,11 @@
 
 ;; increment the byte at the data pointer
 (define-syntax-rule (increment-byte data ptr)
-  (unsafe-bytes-set! data ptr (unsafe-fx+ (unsafe-bytes-ref data ptr) 1)))
+  (unsafe-bytes-set! data ptr (unsafe-fxmodulo (unsafe-fx+ (unsafe-bytes-ref data ptr) 1) 256)))
 
 ;; decrement the byte at the data pointer
 (define-syntax-rule (decrement-byte data ptr)
-  (unsafe-bytes-set! data ptr (unsafe-fx- (unsafe-bytes-ref data ptr) 1)))
+  (unsafe-bytes-set! data ptr (unsafe-fxmodulo (unsafe-fx- (unsafe-bytes-ref data ptr) 1) 256)))
 
 ;; print the byte at the data pointer
 (define-syntax-rule (write-byte-to-stdout data ptr)
@@ -81,11 +80,13 @@
 
 ;; we know how to do loops!
 (define-syntax-rule (loop data ptr body ...)
-  (let loop ()
-    (unless (unsafe-fx= (unsafe-bytes-ref data ptr)
-                        0)
+  (unless (unsafe-fx= (unsafe-bytes-ref data ptr)
+                      0)
+    (let loop ()
       body ...
-      (loop))))
+      (unless (unsafe-fx= (unsafe-bytes-ref data ptr)
+                          0)
+        (loop)))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
