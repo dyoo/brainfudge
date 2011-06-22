@@ -861,7 +861,6 @@ Brown University --- this one is for you guys.  :)
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @; Warning Will Robinson, Warning!
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-@centered{@larger{@bold{@italic{Warning: this section is a work in progress!}}}}
 
 @;; Just as in Puella Magi Madoka Magica, where things change in
 @;; Episode 10, here we too go back to the past.
@@ -1856,6 +1855,17 @@ DrRacket will properly highlight the second @litchar{<} at the left
 edge of the face's mouth.  Hurrah!
 
 
+At the same time, we do incur a runtime cost for these safety checks.
+@verbatim|{
+$ raco make prime.rkt && (echo 100 | time racket prime.rkt)
+raco make prime.rkt && (echo 100 | time racket prime.rkt)
+Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
+1.56user 0.08system 0:01.71elapsed 95%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+8678minor)pagefaults 0swaps
+}|
+
+
+
 
 
 @subsection{Running with scissors}
@@ -1867,17 +1877,36 @@ many of the the other functions we've used in @filepath{semantics.rkt}.  However
 their @emph{safe} equivalents, the ones in @racketmodname[racket/unsafe/ops] don't
 do type tests on their inputs.
 
-This can reduce some runtime costs.  For example, if we're very careful, we can use 
-@racket[unsafe-fx+] and @racket[unsafe-vector-ref] on
-our @racket[data] and @racket[ptr] values: since we're explicitly
-managing the state of our @tt{brainf*ck} machine, we know all the input types, and 
-can guarantee the input types... as long as we don't mess it up.
+This can reduce some runtime costs.  We're already making sure that
+the pointer lies within the boundaries of the data, with our last set
+of changes, so having Racket do the same kind of internal check is
+redundant.
 
-The flip side is that it's easy to mess up.  For example, if our mind wanders to that
+As an example, we can take @racket[increment-byte]:
+@racketblock[
+(define-syntax-rule (increment-byte data ptr)
+  (vector-set! data ptr 
+               (modulo (add1 (vector-ref data ptr))
+                       256)))]
+and use the unsafe version of the operators, to get:
+@racketblock[
+(define-syntax-rule (increment-byte data ptr)
+  (unsafe-vector-set! data ptr 
+                      (unsafe-fxmodulo
+                       (unsafe-fx+ (unsafe-vector-ref data ptr) 1)
+                       256)))]
+
+
+If we're very careful, we can use @racket[unsafe-fx+] and
+@racket[unsafe-vector-ref] on our @racket[data] and @racket[ptr]
+values: since we're explicitly managing the state of our
+@tt{brainf*ck} machine, we know all the input types, and can guarantee
+the input types... as long as we don't mess it up.  The flip side is
+that it's easy to mess up.  For example, if our mind wanders to that
 pleasant afternoon hiking in the mountains, and we quickly type out:
 @codeblock{
 ;; WARNING WARNING DO NOT ACTUALLY EXECUTE THIS!!!
-(unsafe-vector-ref i vec)}
+(unsafe-vector-ref ptr data)}
 then it's very likely that we'll crash the Racket VM, and any program running under 
 the VM at the time.  That would make our @tt{brainf*ck} users unhappy with us, to say the least.
 
@@ -1928,19 +1957,23 @@ Here's what the @filepath{semantics.rkt} look like when we use the unsafe operat
               (current-continuation-marks)
               (apply srcloc loc-sexp))))))
  
+
+
 ;; increment the byte at the data pointer
 (define-syntax-rule (increment-byte data ptr)
-  (vector-set! data ptr 
-               (unsafe-fxmodulo (unsafe-fx+ 
-                                 (vector-ref data ptr) 1)
-                                256)))
- 
+  (unsafe-vector-set! data ptr
+                      (unsafe-fxmodulo
+                       (unsafe-fx+
+                        (unsafe-vector-ref data ptr) 1)
+                       256)))
+
 ;; decrement the byte at the data pointer
 (define-syntax-rule (decrement-byte data ptr)
-  (vector-set! data ptr 
-               (unsafe-fxmodulo (unsafe-fx-
-                                 (vector-ref data ptr) 1)
-                                256)))
+  (unsafe-vector-set! data ptr
+                      (unsafe-fxmodulo
+                       (unsafe-fx-
+                        (unsafe-vector-ref data ptr) 1)
+                       256)))
  
 ;; print the byte at the data pointer
 (define-syntax-rule (write-byte-to-stdout data ptr)
@@ -1973,11 +2006,13 @@ Here's what the @filepath{semantics.rkt} look like when we use the unsafe operat
 
 We can see the net effect of applying the combination of all these optimizations.
 
+
 @verbatim|{
 $ raco make prime.rkt && (echo 100 | time racket prime.rkt)
+raco make prime.rkt && (echo 100 | time racket prime.rkt)
 Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
-1.15user 0.06system 0:01.32elapsed 91%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+10366minor)pagefaults 0swaps
+1.32user 0.05system 0:01.73elapsed 79%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+8696minor)pagefaults 0swaps
 }|
 
 And that's not too bad of a result.  We've gone from thirty-seven seconds to
