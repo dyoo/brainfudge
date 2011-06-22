@@ -850,15 +850,23 @@ you to upload your @filepath{bf.plt} package.
 
 Very special thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram
 Krishnamurthi} for being understanding when I told him I had coded a
-@tt{brainf*ck} compiler.  Guillaume Marceau, Rodolfo Carvalho, and
-Eric Hanchrow helped with grammar and spelling checks.  Casey Klein
-suggested a section in the tutorial that shows how we can generate
-errors that point to original sources.
+@tt{brainf*ck} compiler.  Basically, everyone in the Racket community
+(like Mark Engelberg, Eric Hanchrow, Eli Barzilay, Matthew Flatt,
+Robby Findler, and others that I'm blanking out on...) have been
+wonderful.  The
+@link["http://lists.racket-lang.org/users/archive/2011-June/046090.html"]{mailing
+list thread} shows how many people have helped to shape this tutorial.
+
+
+Guillaume Marceau, Rodolfo Carvalho, and Eric Hanchrow helped with
+grammar and spelling checks.  Casey Klein suggested a section in the
+tutorial that shows how we can generate errors that point to original
+sources.  Eli Barzilay pushed on including an optimization section.
 
 Furthermore, thanks to those who commented from the
 @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming}
 Reddit thread: they helped isolate a performance issue regarding
-parameters and motivated the following section on optimization.  David
+parameters and further motivated the following section on optimization.  David
 Van Horn pointed out how to use @link["http://pypy.org"]{PyPy}'s JIT
 properly, with amazing results.  Sam Tobin-Hochstadt provided
 a few optimization suggestions, many of which have are in the main
