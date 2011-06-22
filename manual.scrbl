@@ -870,7 +870,7 @@ Brown University --- this one is for you guys.  :)
 
 
 
-@section{Epilo... Optimization and Polishing!}
+@section{Epilo... Optimization and polishing!}
 
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 @; Warning Will Robinson, Warning!
