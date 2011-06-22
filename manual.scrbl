@@ -1315,7 +1315,6 @@ Here's what @filepath{semantics.rkt} looks like after this change:
 What effect does this have on our benchmark?
 @verbatim|{
 $ raco make prime.rkt && (echo 100 | time racket prime.rkt)
-raco make prime.rkt && (echo 100 | time racket prime.rkt)
 Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
 3.78user 0.10system 0:03.96elapsed 97%CPU (0avgtext+0avgdata 0maxresident)k
 0inputs+0outputs (0major+10101minor)pagefaults 0swaps
@@ -1465,7 +1464,6 @@ In any case, what does our benchmark tell us about this optimization?
 
 @verbatim|{
 $ raco make prime.rkt && (echo 100 | time racket prime.rkt)
-raco make prime.rkt && (echo 100 | time racket prime.rkt)
 Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
 1.13user 0.09system 0:01.30elapsed 94%CPU (0avgtext+0avgdata 0maxresident)k
 0inputs+0outputs (0major+10095minor)pagefaults 0swaps
@@ -1889,7 +1887,6 @@ edge of the face's mouth.  Hurrah!
 At the same time, we do incur a runtime cost for these safety checks.
 @verbatim|{
 $ raco make prime.rkt && (echo 100 | time racket prime.rkt)
-raco make prime.rkt && (echo 100 | time racket prime.rkt)
 Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
 1.56user 0.08system 0:01.71elapsed 95%CPU (0avgtext+0avgdata 0maxresident)k
 0inputs+0outputs (0major+8678minor)pagefaults 0swaps
@@ -2044,10 +2041,9 @@ We can see the net effect of applying the combination of all these optimizations
 
 @verbatim|{
 $ raco make prime.rkt && (echo 100 | time racket prime.rkt)
-raco make prime.rkt && (echo 100 | time racket prime.rkt)
 Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 89 97 
-1.32user 0.05system 0:01.73elapsed 79%CPU (0avgtext+0avgdata 0maxresident)k
-0inputs+0outputs (0major+8696minor)pagefaults 0swaps
+1.24user 0.05system 0:01.41elapsed 91%CPU (0avgtext+0avgdata 0maxresident)k
+0inputs+0outputs (0major+8692minor)pagefaults 0swaps
 }|
 
 And that's not too bad of a result.  We've gone from thirty-seven seconds to
