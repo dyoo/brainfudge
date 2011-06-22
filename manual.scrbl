@@ -25,6 +25,10 @@
                                `(planet dyoo/bf/parser))))))))
 
 
+@centered{@smaller{Source code can be found at:
+@url{https://github.com/dyoo/brainfudge}.  The latest version of this
+document lives in @url{http://hashcollision.org/brainfudge}.}}
+
 
 @section{Introduction}
 
@@ -844,11 +848,21 @@ you to upload your @filepath{bf.plt} package.
 
 @section{Acknowledgements}
 
-Very special thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram Krishnamurthi} for being understanding
-when I told him I had coded a @tt{brainf*ck} compiler.  Guillaume Marceau, Rodolfo Carvalho, and
-Eric Hanchrow helped with grammar and spelling checks.  Casey Klein suggested a section in the tutorial that shows how we can generate errors that point to original sources.
-Furthermore, thanks to those who commented from the @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming} Reddit thread: they helped
-isolate a performance issue regarding parameters and motivated the section on optimization.  
+Very special thanks to @link["http://www.cs.brown.edu/~sk/"]{Shriram
+Krishnamurthi} for being understanding when I told him I had coded a
+@tt{brainf*ck} compiler.  Guillaume Marceau, Rodolfo Carvalho, and
+Eric Hanchrow helped with grammar and spelling checks.  Casey Klein
+suggested a section in the tutorial that shows how we can generate
+errors that point to original sources.
+
+Furthermore, thanks to those who commented from the
+@link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming}
+Reddit thread: they helped isolate a performance issue regarding
+parameters and motivated the following section on optimization.  David
+Van Horn pointed out how to use @link["http://pypy.org"]{PyPy}'s JIT
+properly, the results of which amazing.  Sam Tobin-Hochstadt provided
+a few optimization suggestions, many of which have are in the main
+@racketmodname[(planet dyoo/bf)] implementation.
 
 Finally, big shoutouts to the PLT group at
 Brown University --- this one is for you guys.  :)
@@ -1453,8 +1467,9 @@ second plus a little more.
 
 @subsection{Strapping on the safety goggles}
 
-We should ask ourselves: is our language actually doing the right thing?
-We might consider the following situations:
+Let's pause for a moment.  We should ask ourselves: is our language
+actually doing the Right thing?  We might consider the following
+situations:
 
 @itemlist[
 
@@ -1464,16 +1479,18 @@ and encounter @racket[eof] instead.}
 @item{A program may try to increment the value at the pointer beyond
 the boundaries of a byte.}
 
-@item{The machine might be instructed to move the pointer right off
+@item{The machine might be instructed to shift the pointer @bold{*clunk*} off
 the data array.}
 ]
 
-Oh dear.  We should have looked at this earlier!  How shameful!
-None of these are addressed by our current implementation.
-We'd better correct these
-flaws before continuing forward, before anyone else notices.  And even
-if this costs us a few millseconds in performance, it's certainly
-worth knowing exactly what should happen in these situations.
+What happens in our current implementation when these situations arise?
+
+Oh dear.  We should have looked at this earlier!  How shameful!  None
+of these are directly addressed by our current implementation.  We'd
+better correct these flaws before continuing forward, before anyone
+else notices.  And even if this costs us a few millseconds in
+performance, it's certainly worth knowing exactly what should happen
+in these situations.
 
 
 
@@ -1659,11 +1676,11 @@ what @racket[greater-than] will look like:
     [(_)
      (quasisyntax/loc stx
        (increment-ptr current-data current-ptr 
-                      '(#,(syntax-source stx)
-                        #,(syntax-line stx)
-                        #,(syntax-column stx)
-                        #,(syntax-position stx)
-                        #,(syntax-span stx))))]))}|
+                      (srcloc '#,(syntax-source stx)
+                              '#,(syntax-line stx)
+                              '#,(syntax-column stx)
+                              '#,(syntax-position stx)
+                              '#,(syntax-span stx))))]))}|
 
 One small complication is that we need the ability to talk about the
 source location of the syntax object being fed to the
@@ -1677,14 +1694,14 @@ Let's look at the corresponding changes we need to make to
 @racket[increment-ptr] will look like this.
 
 @codeblock|{
-(define-syntax-rule (increment-ptr data ptr loc-sexp)
+(define-syntax-rule (increment-ptr data ptr loc)
   (begin
     (set! ptr (add1 ptr))
     (when (>= ptr (vector-length data))
       (raise (make-exn:fail:out-of-bounds 
               "out of bounds"
               (current-continuation-marks)
-              (apply srcloc loc-sexp))))))}|
+              loc)))))}|
 
 
 
@@ -1714,32 +1731,34 @@ the following:
           0))
  
 ;; increment the data pointer
-(define-syntax-rule (increment-ptr data ptr loc-sexp)
+(define-syntax-rule (increment-ptr data ptr loc)
   (begin
     (set! ptr (add1 ptr))
     (when (>= ptr (vector-length data))
       (raise (make-exn:fail:out-of-bounds 
               "out of bounds"
               (current-continuation-marks)
-              (apply srcloc loc-sexp))))))
+              loc)))))
 
 ;; decrement the data pointer
-(define-syntax-rule (decrement-ptr data ptr loc-sexp)
+(define-syntax-rule (decrement-ptr data ptr loc)
   (begin
     (set! ptr (sub1 ptr))
     (when (< ptr 0)
       (raise (make-exn:fail:out-of-bounds 
               "out of bounds"
               (current-continuation-marks)
-              (apply srcloc loc-sexp))))))
+              loc)))))
  
 ;; increment the byte at the data pointer
 (define-syntax-rule (increment-byte data ptr)
-  (vector-set! data ptr (modulo (add1 (vector-ref data ptr)) 256)))
+  (vector-set! data ptr 
+               (modulo (add1 (vector-ref data ptr)) 256)))
  
 ;; decrement the byte at the data pointer
 (define-syntax-rule (decrement-byte data ptr)
-  (vector-set! data ptr (modulo (sub1 (vector-ref data ptr)) 256)))
+  (vector-set! data ptr 
+               (modulo (sub1 (vector-ref data ptr)) 256)))
  
 ;; print the byte at the data pointer
 (define-syntax-rule (write-byte-to-stdout data ptr)
@@ -1802,22 +1821,22 @@ the following:
     [(_)
      (quasisyntax/loc stx
        (increment-ptr current-data current-ptr 
-                      '(#,(syntax-source stx)
-                        #,(syntax-line stx)
-                        #,(syntax-column stx)
-                        #,(syntax-position stx)
-                        #,(syntax-span stx))))]))
+                      (srcloc '#,(syntax-source stx)
+                              '#,(syntax-line stx)
+                              '#,(syntax-column stx)
+                              '#,(syntax-position stx)
+                              '#,(syntax-span stx))))]))
  
 (define-syntax (less-than stx)
   (syntax-case stx ()
     [(_)
      (quasisyntax/loc stx
        (decrement-ptr current-data current-ptr
-                      '(#,(syntax-source stx)
-                        #,(syntax-line stx)
-                        #,(syntax-column stx)
-                        #,(syntax-position stx)
-                        #,(syntax-span stx))))]))
+                      (srcloc '#,(syntax-source stx)
+                              '#,(syntax-line stx)
+                              '#,(syntax-column stx)
+                              '#,(syntax-position stx)
+                              '#,(syntax-span stx))))]))
  
 (define-syntax-rule (plus)
   (increment-byte current-data current-ptr))
@@ -1863,6 +1882,7 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 1.56user 0.08system 0:01.71elapsed 95%CPU (0avgtext+0avgdata 0maxresident)k
 0inputs+0outputs (0major+8678minor)pagefaults 0swaps
 }|
+but let's accept the hit here.
 
 
 
@@ -1938,24 +1958,24 @@ Here's what the @filepath{semantics.rkt} look like when we use the unsafe operat
           0))
  
 ;; increment the data pointer
-(define-syntax-rule (increment-ptr data ptr loc-sexp)
+(define-syntax-rule (increment-ptr data ptr loc)
   (begin
     (set! ptr (unsafe-fx+ ptr 1))
     (when (unsafe-fx>= ptr (unsafe-vector-length data))
       (raise (make-exn:fail:out-of-bounds 
               "out of bounds"
               (current-continuation-marks)
-              (apply srcloc loc-sexp))))))
+              loc)))))
 
 ;; decrement the data pointer
-(define-syntax-rule (decrement-ptr data ptr loc-sexp)
+(define-syntax-rule (decrement-ptr data ptr loc)
   (begin
     (set! ptr (unsafe-fx- ptr 1))
     (when (unsafe-fx< ptr 0)
       (raise (make-exn:fail:out-of-bounds 
               "out of bounds"
               (current-continuation-marks)
-              (apply srcloc loc-sexp))))))
+              loc)))))
  
 
 
@@ -2002,7 +2022,7 @@ Here's what the @filepath{semantics.rkt} look like when we use the unsafe operat
 
 
 
-@subsection{A final accounting}
+@section{A final accounting}
 
 We can see the net effect of applying the combination of all these optimizations.
 
@@ -2019,10 +2039,34 @@ And that's not too bad of a result.  We've gone from thirty-seven seconds to
 just over one.
 
 
+What we have in hand isn't the world's
+@link["http://code.google.com/p/esotope-bfc/wiki/Comparison"]{fastest}
+@tt{brainf*ck} implementation.  Ours isn't horrible, mind you, but it
+doesn't win speed records.  What we do have, though, is an
+implementation that's fairly straightforward, and integrates well with
+the umbrella of other languages and tools in Racket.
 
-@section{Next steps}
 
-There's much more content about @link["http://docs.racket-lang.org/guide/languages.html"]{building languages} in the @link["http://docs.racket-lang.org/guide/index.html"]{Racket Guide}; hopefully, this
-tutorial helps other hackers who'd love to try their hand at language design and implementation.
+It's one with which we can easily run language experiments.  What if
+we wanted to run @tt{brainf*ck} programs in
+@link["http://docs.racket-lang.org/reference/places.html"]{parallel}?
+What if we want to run these programs under a restrictive
+@link["http://docs.racket-lang.org/reference/Sandboxed_Evaluation.html"]{sandbox}?
+Would using a
+@link["http://docs.racket-lang.org/ts-guide/index.html"]{type system}
+allow us to remove all those messy unsafe annotations in our
+semantics, while still removing the redundant type checks?
 
-Also, please feel free to ask questions on the @link["http://lists.racket-lang.org/users/"]{Racket Users mailing list}; we'll be happy to talk!
+And what if we want to look at other languages besides @tt{brainf*ck}?
+
+
+There's much more content about
+@link["http://docs.racket-lang.org/guide/languages.html"]{building
+languages} in the
+@link["http://docs.racket-lang.org/guide/index.html"]{Racket Guide};
+hopefully, this tutorial helps other hackers who'd love to try their
+hand at language design and implementation.
+
+Also, please feel free to ask questions on the
+@link["http://lists.racket-lang.org/users/"]{Racket Users mailing
+list}; we'll be happy to talk!
