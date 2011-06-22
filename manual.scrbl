@@ -1235,11 +1235,14 @@ benchmark results as we optimize.
 One trivial thing we can do is revisit our @filepath{semantics.rkt}
 file, and transform all of the exported function definitions into
 macros.  This allows Racket's compiler to inline the definitions for
-each use.  That is, right now, Racket process and expands our
+each use.  That is, right now, Racket processes and expands our
 @tt{brainf*ck} programs up to the function definitions in the
-@filepath{semantics.rkt}.  Basically, we can go in and replace each
-@racket[define] with a @racket[define-syntax-rule].
+@filepath{semantics.rkt}, but does no intra-module optimizations.  If
+we modify the semantics forms into macros, maybe that will help
+performance.
 
+Basically, we go in and replace each
+@racket[define] with a @racket[define-syntax-rule].
 Here's what @filepath{semantics.rkt} looks like after this change:
 @filebox["semantics.rkt"]{
 @codeblock|{
@@ -1437,10 +1440,10 @@ what this looks like for both files.
 
 Ok, so this change is pretty mechanical.  However, it does have a
 consequence: it means that our use of the semantics is a bit more
-restricted, because we give each form (@racket[increment-ptr],
+restricted.  We give each form (@racket[increment-ptr],
 @racket[decrement-ptr], ...) an identifier for the @racket[ptr],
 because some of the rules will @racket[set!] the value of the
-identifier.  That is, to use the semantics, we've got to first bind
+@racket[ptr] identifier.  That requires us to first bind
 the state variables,
 @racketblock[(let-values ([(data ptr) (new-state)]) 
                 ...)]
@@ -1460,7 +1463,7 @@ Primes up to: 2 3 5 7 11 13 17 19 23 29 31 37 41 43 47 53 59 61 67 71 73 79 83 8
 }|
 
 
-That seems like a more substantial optimization!  Ok, we're down to about a
+That seems like a worthwhile optimization.  Ok, we're down to about a
 second plus a little more.
 
 
@@ -1908,7 +1911,7 @@ As an example, we can take @racket[increment-byte]:
   (vector-set! data ptr 
                (modulo (add1 (vector-ref data ptr))
                        256)))]
-and use the unsafe version of the operators, to get:
+and modify it to use the unsafe version of the operators, to get:
 @racketblock[
 (define-syntax-rule (increment-byte data ptr)
   (unsafe-vector-set! data ptr 
@@ -1920,15 +1923,14 @@ and use the unsafe version of the operators, to get:
 If we're very careful, we can use @racket[unsafe-fx+] and
 @racket[unsafe-vector-ref] on our @racket[data] and @racket[ptr]
 values: since we're explicitly managing the state of our
-@tt{brainf*ck} machine, we know all the input types, and can guarantee
-the input types... as long as we don't mess it up.  The flip side is
-that it's easy to mess up.  For example, if our mind wanders to that
-pleasant afternoon hiking in the mountains, and we quickly type out:
-@codeblock{
-;; WARNING WARNING DO NOT ACTUALLY EXECUTE THIS!!!
-(unsafe-vector-ref ptr data)}
-then it's very likely that we'll crash the Racket VM, and any program running under 
-the VM at the time.  That would make our @tt{brainf*ck} users unhappy with us, to say the least.
+@tt{brainf*ck} machine, we know all the input types... as long as we
+don't mess it up.  The flip side is that it's easy to mess up.  For
+example, if our mind wanders to that pleasant afternoon hiking in the
+mountains, and we quickly type out: @codeblock{ ;; WARNING WARNING DO
+NOT ACTUALLY EXECUTE THIS!!!  (unsafe-vector-ref ptr data)} then it's
+very likely that we'll crash the Racket VM, and any program running
+under the VM at the time.  That would make our @tt{brainf*ck} users
+unhappy with us, to say the least.
 
 So we need to tread very, very carefully.
 
@@ -2043,8 +2045,8 @@ What we have in hand isn't the world's
 @link["http://code.google.com/p/esotope-bfc/wiki/Comparison"]{fastest}
 @tt{brainf*ck} implementation.  Ours isn't horrible, mind you, but it
 doesn't win speed records.  What we do have, though, is an
-implementation that's fairly straightforward, and integrates well with
-the umbrella of other languages and tools in Racket.
+implementation that's fairly straightforward, and integrates well within
+the umbrella of the other languages and tools in Racket.
 
 
 It's one with which we can easily run experiments.  What if
