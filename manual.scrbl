@@ -1935,11 +1935,15 @@ values: since we're explicitly managing the state of our
 @tt{brainf*ck} machine, we know all the input types... as long as we
 don't mess it up.  The flip side is that it's easy to mess up.  For
 example, if our mind wanders to that pleasant afternoon hiking in the
-mountains, and we quickly type out: @codeblock{ ;; WARNING WARNING DO
-NOT ACTUALLY EXECUTE THIS!!!  (unsafe-vector-ref ptr data)} then it's
-very likely that we'll crash the Racket VM, and any program running
-under the VM at the time.  That would make our @tt{brainf*ck} users
-unhappy with us, to say the least.
+mountains, and we quickly type out: 
+
+@codeblock{
+;; WARNING WARNING DO NOT ACTUALLY EXECUTE THIS!!!
+(unsafe-vector-ref ptr data)}
+
+then it's very likely that we'll crash the Racket VM, and any program
+running under the VM at the time.  That would make our @tt{brainf*ck}
+users unhappy with us, to say the least.
 
 So we need to tread very, very carefully.
 
