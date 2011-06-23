@@ -7,7 +7,22 @@
           racket/sandbox
           (for-label racket/base)
 	  (for-label racket/stxparam)
-          (for-label racket/unsafe/ops))
+          (for-label racket/unsafe/ops)
+          "scribble-helpers.rkt")
+
+
+@inject-javascript|{
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-24146890-1']);
+  _gaq.push(['_trackPageview']);
+ 
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();      
+}|
+
 
 @title{F*dging up a Racket}
 @author+email["Danny Yoo" "dyoo@cs.wpi.edu"]
