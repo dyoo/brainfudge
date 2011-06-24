@@ -1886,6 +1886,8 @@ And if we try running the following grumpy-looking program,
 @verbatim|{
 #lang planet dyoo/bf
 
+  ／人◕ ‿‿ ◕人＼
+
    ***********
   *           *
   *  o>    <o  *
@@ -1894,6 +1896,7 @@ And if we try running the following grumpy-looking program,
    *          *
      ********
 }|
+@;; Poor Mami.
 
 DrRacket will properly highlight the second @litchar{<} at the left
 edge of the face's mouth.  Hurrah!
