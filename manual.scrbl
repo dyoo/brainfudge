@@ -961,7 +961,7 @@ shows that something strange is happening.
 So let's try our hand at optimization!  We may not get the raw 
 performance of an impressive project like @link["http://pypy.org/"]{PyPy}, but we
 still should be able to perform reasonably well.  Furthermore, we will
-including some error handling that uses the source locations we constructed in our
+include some error handling that uses the source locations we constructed in our
 parser, in order to precisely point out runtime errors in the original source.
 
 
@@ -1054,7 +1054,7 @@ parameter}.  A syntax parameter is similar to the reviled parameter
 that we talked about earlier, except that it works
 @emph{syntactically} rather than @emph{dynamically}.  A common use of
 a syntax parameter is to let us wrap a certain area in our code, and
-say: ``Any where this identifier shows up, rename it to use this
+say: ``Anywhere this identifier shows up, rename it to use this
 variable instead.''
 
 Let's see a demonstration of these in action, because all this talk
@@ -1262,7 +1262,7 @@ macros.  This allows Racket's compiler to inline the definitions for
 each use.  That is, right now, Racket processes and expands our
 @tt{brainf*ck} programs up to the function definitions in the
 @filepath{semantics.rkt}, but does no intra-module optimizations.  If
-we modify the semantics forms into macros, maybe that will help
+we modify those functions into macros, maybe that will help
 performance.
 
 Basically, we go in and replace each
@@ -1493,7 +1493,7 @@ second plus a little more.
 @subsection{Strapping on the safety goggles}
 
 Let's pause for a moment.  We should ask ourselves: is our language
-actually doing the Right thing?  We might consider the following
+actually doing The Right Thing?  We might consider the following
 situations:
 
 @itemlist[
@@ -1918,7 +1918,7 @@ but let's accept the hit here.
 @subsection{Running with scissors}
 
 There's one obvious thing we haven't done yet: we haven't taken a look at
-@racketmodname[racket/unsafe/ops].  @racketmodname[racket/unsafe/ops] provides
+@racketmodname[racket/unsafe/ops].  That module provides
 functions that act like @racket[+], @racket[vector-ref], and
 many of the the other functions we've used in @filepath{semantics.rkt}.  However, unlike
 their @emph{safe} equivalents, the ones in @racketmodname[racket/unsafe/ops] don't
