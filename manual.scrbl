@@ -1340,7 +1340,7 @@ little more performance, at the cost of some code expansion.  But not a large on
 
 
 
-@subsection{Structures?  Where's we're going, we won't need structures...}
+@subsection{Structures?  Where we're going, we won't need structures...}
 
 While we have our eye on @filepath{semantics.rkt}, we might wonder:
 how much is it costing us to access the @racket[data] and @racket[ptr]
