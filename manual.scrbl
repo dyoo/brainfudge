@@ -1514,7 +1514,7 @@ What happens in our current implementation when these situations arise?
 Oh dear.  We should have looked at this earlier!  How shameful!  None
 of these are directly addressed by our current implementation.  We'd
 better correct these flaws before continuing forward, before anyone
-else notices.  And even if this costs us a few millseconds in
+else notices.  And even if this costs us a few milliseconds in
 performance, it's certainly worth knowing exactly what should happen
 in these situations.
 
