@@ -229,7 +229,7 @@ then see that Racket can find it through PLaneT.
     #lang racket
     "hello world"
     }|
-Ok, let's see if Racket can find our magnificant @filepath{hello.rkt} module if we use the PLaneTized version of the name. 
+Ok, let's see if Racket can find our magnificent @filepath{hello.rkt} module if we use the PLaneTized version of the name. 
     @verbatim|{
     ~/bf$ racket
     Welcome to Racket v5.1.1.
@@ -873,10 +873,11 @@ wonderful.  The
 list thread} shows how many people have helped to shape this tutorial.
 
 
-Guillaume Marceau, Rodolfo Carvalho, and Eric Hanchrow helped with
-grammar and spelling checks.  Casey Klein suggested a section in the
-tutorial that shows how we can generate errors that point to original
-sources.  Eli Barzilay pushed on including an optimization section.
+Guillaume Marceau, Rodolfo Carvalho, Eric Hanchrow, and Shriram helped
+with grammar and spelling checks.  Casey Klein suggested a section in
+the tutorial that shows how we can generate errors that point to
+original sources.  Eli Barzilay pushed on including an optimization
+section.
 
 Furthermore, thanks to those who commented from the
 @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming}
