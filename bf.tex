@@ -97,7 +97,7 @@ So here's what we'll do:
 
 
 \section{Flight preparations}
-Since we're starting from scratch, let's first make a work directory where we'll keep our source code. I'll call the directory "bf/", but you can use whatever name you want.
+Since we're starting from scratch, let's first make a work directory where we'll keep our source code. I'll call the directory ``bf/'', but you can use whatever name you want.
 \begin{verbatim}
 $ mkdir bf
 \end{verbatim}
@@ -107,7 +107,7 @@ If we enter the following at the command line,
 \begin{verbatim}
 $ planet link dyoo bf.plt 1 0 bf
 \end{verbatim}
-we'll make a development link that will associate any module path of the form (planet dyoo/bf/...) to our local "bf/" directory. Later on, when we create a package and upload it to PLaneT, we can drop this development link, and then all the references that use (planet dyoo/bf/...) will immediately switch over to the one on the PLaneT server.
+we'll make a development link that will associate any module path of the form (planet dyoo/bf/...) to our local ``bf/'' directory. Later on, when we create a package and upload it to PLaneT, we can drop this development link, and then all the references that use (planet dyoo/bf/...) will immediately switch over to the one on the PLaneT server.
 
 
 But does the link actually work? Let's write a very simple module in our work directory, and then see that Racket can find it through PLaneT.
@@ -117,10 +117,10 @@ $ cd bf
 #lang racket
 "hello world"
 \end{verbatim}
-Ok, let's see if Racket can find our magnificent "hello.rkt" module if we use the PLaneTized version of the name.
+Ok, let's see if Racket can find our magnificent ``hello.rkt'' module if we use the PLaneTized version of the name.
 \begin{verbatim}
 ~/bf$ racket
-Welcome to Racket v5.1.1.
+Welcome to Racket v5.2.
 > (require (planet dyoo/bf/hello))
 "hello world"
 >
@@ -153,7 +153,7 @@ and it has only a few operations that affect this state:
 \item Perform a loop until the byte at the data pointer is zero (\verb|[|, \verb|]|)
 \end{itemize}
 
-Let's write a module that lets us play with such a system: let's call it "semantics.rkt".
+Let's write a module that lets us play with such a system: let's call it ``semantics.rkt''.
 \begin{verbatim}
 "semantics.rkt"
 #lang racket
@@ -214,7 +214,7 @@ Let's write a module that lets us play with such a system: let's call it "semant
       body ...
       (loop))))
 \end{verbatim}
-Ok, that doesn't seem too bad. But of course, we should test this; let's use the "rackunit" unit testing framework and tickle this code. Let's add a little more to the end of "semantics.rkt".
+Ok, that doesn't seem too bad. But of course, we should test this; let's use the \verb|rackunit| unit testing framework and tickle this code. Let's add a little more to the end of ``semantics.rkt''.
 \begin{verbatim}
 "semantics.rkt"
 ;; Simple exercises.
@@ -282,7 +282,7 @@ Good! Our tests, at the very least, let us know that our definitions are doing s
 However, there are a few things that we may want to fix in the future, like the lack of error trapping if the input stream contains eof. And there's no bounds-checking on the ptr or on the values in the data. Wow, there are quite a few things that we might want to fix. But at the very least, we now have a module that captures the semantics of brainf*ck.
 
 \section{Lisping a language}
-We might even be cheeky enough to insist that people write brainf*ck programs with s-expressions. Let's take that route, and create a module language that uses our "semantics.rkt". We'll create such a module language in "language.rkt".
+We might even be cheeky enough to insist that people write brainf*ck programs with s-expressions. Let's take that route, and create a module language that uses our ``semantics.rkt''. We'll create such a module language in ``language.rkt''.
 \begin{verbatim}
 "language.rkt"
 #lang racket
@@ -330,7 +330,7 @@ We might even be cheeky enough to insist that people write brainf*ck programs wi
 (define-syntax-rule (brackets body ...)
   (loop (current-state) body ...))
 \end{verbatim}
-This "language.rkt" presents brainf*ck as a s-expression-based language. It uses the semantics we've coded up, and defines rules for handling greater-than, less-than, etc... We have a parameter called current-state that holds the state of the brainf*ck machine that's used through the language.
+This ``language.rkt'' presents brainf*ck as a s-expression-based language. It uses the semantics we've coded up, and defines rules for handling greater-than, less-than, etc... We have a parameter called current-state that holds the state of the brainf*ck machine that's used through the language.
 
 There's one piece of this language that looks particularly mysterious: what's the \verb+#%module-begin+ form, and what is it doing? In Racket, every module has an implicit \verb+#%module-begin+ that wraps around the entirety of the module's body. We can see this by asking Racket to show us the results of the expansion process; here's a small example to demonstrate.
 \begin{verbatim}
@@ -351,7 +351,7 @@ It turns out that \verb+#%module-begin+ can be really useful! In particular, we 
 then it would be a shame to have the two programs clash just because they brainf*cked each other's data! By defining our own \verb+#%module-begin+, we can ensure that each brainf*ck module has its own fresh version of the state, and our definition of my-module-begin does this for us.
 
 
-Once we've written "language.rkt", we can use the language like this:
+Once we've written ``language.rkt'', we can use the language like this:
 \begin{verbatim}
 #lang s-exp (planet dyoo/bf/language)
  
@@ -375,9 +375,9 @@ Once we've written "language.rkt", we can use the language like this:
 (minus)(minus)(minus)(minus)(minus)(minus)(minus)(minus)
 (period)(greater-than) (plus) (period) (greater-than) (period)
 \end{verbatim}
-The \verb+#lang+ line here is saying, essentially, that the following program is written with s-expressions, and should be treated with the module language "language.rkt" that we just wrote up. And if we run this program, we should see a familiar greeting. Hurrah!
+The \verb+#lang+ line here is saying, essentially, that the following program is written with s-expressions, and should be treated with the module language ``language.rkt'' that we just wrote up. And if we run this program, we should see a familiar greeting. Hurrah!
 
-... But wait! We can't just declare victory here. We really do want to allow the throngs of brainf*ck programmers to write brainf*ck in the surface syntax that they deserve. Keep "language.rkt" on hand, though. We will reuse it by having our parser transform the surface syntax into the forms we defined in "language.rkt".
+... But wait! We can't just declare victory here. We really do want to allow the throngs of brainf*ck programmers to write brainf*ck in the surface syntax that they deserve. Keep ``language.rkt'' on hand, though. We will reuse it by having our parser transform the surface syntax into the forms we defined in ``language.rkt''.
 
 Let's get that parser working!
 
@@ -404,7 +404,7 @@ error messages during parsing or run-time.)
 
 Let's write a parser. Our parser will consume an input-port, from
 which we can read in bytes with
-\verb|read-byte|.  We'll write the following into "parser.rkt".
+\verb|read-byte|.  We'll write the following into ``parser.rkt''.
 \begin{verbatim}
 "parser.rkt"
 #lang racket
@@ -472,7 +472,7 @@ Let's see if this parser does anything useful:
 Good! So we're able to parse s-expressions out of an input stream.
 
 We should note that the parser is generating syntax objects that use
-the same names as the defined names we have in our "language.rkt"
+the same names as the defined names we have in our ``language.rkt''
 module language. Yup, that's deliberate, and we'll see why in the next
 section.
 
@@ -493,9 +493,9 @@ Still, we've now got the language and a parser. How do we tie them together?
 This part is fairly straightforward. We have two pieces in hand:
 
 \begin{itemize}
-\item A parser in "parser.rkt" for the surface syntax that produces ASTs
+\item A parser in ``parser.rkt'' for the surface syntax that produces ASTs
 
-\item A module language in "language.rkt" that provides the meaning for those ASTs.
+\item A module language in ``language.rkt'' that provides the meaning for those ASTs.
 \end{itemize}
 
 To combine these two pieces together, we want to define a reader that
@@ -504,10 +504,10 @@ form:
 \begin{verbatim}
 #lang planet dyoo/bf
 \end{verbatim}
-it will look for a reader module in "lang/reader.rkt" and use it to
+it will look for a reader module in ``lang/reader.rkt'' and use it to
 parse the file.  Racket provides a helper module called
 \verb|syntax/module-reader| to handle most of the dirty work; let's use
-it. Make a "lang/" subdirectory, and create "reader.rkt" in that
+it. Make a ``lang/'' subdirectory, and create ``reader.rkt'' in that
 subdirectory, with the following content:
 \begin{verbatim}
 "lang/reader.rkt"
@@ -527,7 +527,7 @@ subdirectory, with the following content:
 Some of this is magic, so let's step through this. The second line of
 the file tells \verb|syntax/module-reader| that any abstract syntax trees
 that come out are intended to take on their semantics from our
-language module "language.rkt". \verb|syntax/module-reader| is predisposed to
+language module ``language.rkt''. \verb|syntax/module-reader| is predisposed to
 assume that the individual expressions of our programs are read using read and read-syntax, so we
 override that default and plug in our \verb|parse-expr| function into place.
 Now that we have all these pieces together, does any of this work?
@@ -564,7 +564,7 @@ $ ls -l bf.plt
 -rw-rw-r-- 1 dyoo nogroup 3358 Jun 12 19:39 bf.plt
 \end{verbatim}
 
-There are a few warnings, because we haven't defined an "info.rkt" which provides metadata about our package. Good, diligent citizens would write an "info.rkt" file, so let's write one.
+There are a few warnings, because we haven't defined an ``info.rkt'' which provides metadata about our package. Good, diligent citizens would write an ``info.rkt'' file, so let's write one.
 \begin{verbatim}
 "info.rkt"
 #lang setup/infotab
@@ -581,7 +581,7 @@ There are a few warnings, because we haven't defined an "info.rkt" which provide
 (define release-notes
   '((p "First release")))
 \end{verbatim}
-Before we upload the package, let's make sure the "bf.plt" package works for us locally. We'll simulate an installation. First, let's break the development link.
+Before we upload the package, let's make sure the ``bf.plt'' package works for us locally. We'll simulate an installation. First, let's break the development link.
 \begin{verbatim}
 $ planet unlink dyoo bf.plt 1 0
 \end{verbatim}
@@ -611,7 +611,7 @@ Hello, World!
 \end{verbatim}
 Good! This simulates the situation where the package has been installed from PLaneT.
 
-Once we're finally satisfied with the package's contents, we can finally upload it onto PLaneT. If you log onto planet.racket-lang.org, the user interface will allow you to upload your "bf.plt" package.
+Once we're finally satisfied with the package's contents, we can finally upload it onto PLaneT. If you log onto planet.racket-lang.org, the user interface will allow you to upload your ``bf.plt'' package.
 
 
 \end{document}
