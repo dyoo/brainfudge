@@ -3,7 +3,7 @@
 \begin{document}
 \section{Introduction}
 
-If people say that Racket is just a Scheme, they are short-selling Racket a little. It’s more accurate to say that Racket is a language laboratory, with support for many different languages.
+If people say that Racket is just a Scheme, they are short-selling Racket a little. It's more accurate to say that Racket is a language laboratory, with support for many different languages.
 
 Is that really true? Racket does include a nice macro system, which allows a programmer to add in new language constructs. For example, we can get while loops into Racket with relative ease:
 \begin{verbatim}
@@ -20,11 +20,11 @@ Is that really true? Racket does include a nice macro system, which allows a pro
 \end{verbatim}
 So we can certainly extend the language. But this still looks just like a Scheme.
 
-Let’s take a closer look at a Racket program. Every Racket program begins with a funny line at the very top that, on first glance, looks redundant:
+Let's take a closer look at a Racket program. Every Racket program begins with a funny line at the very top that, on first glance, looks redundant:
 \begin{verbatim}
 #lang racket
 \end{verbatim}
-Why in the world does a Racket program need to say that it’s a Racket program? Isn’t that obvious?
+Why in the world does a Racket program need to say that it's a Racket program? Isn't that obvious?
 
 
 We can understand the situation better by looking at another environment on our desktop, namely the web browser. A web browser supports different kinds of HTML variants, since HTML is a moving target, and browsers have come up with crazy rules for figuring out how to take an arbitrary document and decide what HTML parsing rules to apply to it.
@@ -38,9 +38,9 @@ HTML 5 tries to make this determination somewhat more straightforward: we can de
 </html>
 \end{verbatim}
 
-Going back to the world of Racket, we see by analogy that the #lang line in a Racket program is a self-description of how to treat the rest of the program. (Actually, the #lang line is quite bit more active than this, but we’ll get to this in a moment.)
+Going back to the world of Racket, we see by analogy that the \verb+#lang+ line in a Racket program is a self-description of how to treat the rest of the program. (Actually, the \verb+#lang+ line is quite bit more active than this, but we'll get to this in a moment.)
 
-The racket part in the #lang line isn’t inevitable: the main Racket distribution, in fact, comes bundled with several languages which can take the place of the word racket. Many of these languages (racket/base, typed/racket, lazy) still look like Racket... but some of them don’t. Here’s one example:
+The racket part in the \verb+#lang+ line isn't inevitable: the main Racket distribution, in fact, comes bundled with several languages which can take the place of the word racket. Many of these languages (racket/base, typed/racket, lazy) still look like Racket... but some of them don't. Here's one example:
 \begin{verbatim}
 #lang datalog
 ancestor(A, B) :- parent(A, B).
@@ -53,7 +53,7 @@ ancestor(A, B)?
 This is an example of a Datalog program that deals with logical relations. Neat!
 
 
-What might be surprising is that the mechanism for using different languages in Racket is wide open. Let’s expand our minds.
+What might be surprising is that the mechanism for using different languages in Racket is wide open. Let's expand our minds.
 \begin{verbatim}
 #lang planet dyoo/bf
 ++++++[>++++++++++++<-]>.
@@ -65,9 +65,9 @@ What might be surprising is that the mechanism for using different languages in 
 This language does not look like Racket. It looks like line noise. This is brainf*ck. Although this language is not included in the main distribution, because it is on PLaneT, anyone with Racket can easily play with it.
 
 
-Ignoring the question of why?!! someone would do this, let’s ask another: how do we build this? This tutorial will cover how to build this language into Racket from scratch.
+Ignoring the question of why?!! someone would do this, let's ask another: how do we build this? This tutorial will cover how to build this language into Racket from scratch.
 
-Let’s get started!
+Let's get started!
 
 \section{The view from high orbit}
 We want to teach Racket what it means when we say something like:
@@ -75,16 +75,16 @@ We want to teach Racket what it means when we say something like:
 #lang planet dyoo/bf
 ,[.,]
 \end{verbatim}
-As mentioned earlier, a #lang line is quite active: it tells the Racket runtime how to convert from the surface syntax to a meaningful program. Programs in Racket get digested in a few stages; the process looks something like this:
+As mentioned earlier, a \verb+#lang+ line is quite active: it tells the Racket runtime how to convert from the surface syntax to a meaningful program. Programs in Racket get digested in a few stages; the process looks something like this:
 
 \begin{verbatim}
                  reader        macro expansion
 surface syntax ---------> AST -----------------> core forms
 \end{verbatim}
 
-When Racket sees #lang planet dyoo/bf, it will look for a particular module that we call a reader; a reader consumes surface syntax and excretes ASTs, and these ASTs are then annotated so that Racket knows how to make sense out of them later on. At this point, the rest of the Racket infrastructure kicks in and macro-expands the ASTs out, ultimately, to a core language.
+When Racket sees \verb+#lang planet dyoo/bf+, it will look for a particular module that we call a reader; a reader consumes surface syntax and excretes ASTs, and these ASTs are then annotated so that Racket knows how to make sense out of them later on. At this point, the rest of the Racket infrastructure kicks in and macro-expands the ASTs out, ultimately, to a core language.
 
-So here’s what we’ll do:
+So here's what we'll do:
 \begin{itemize}
 \item Capture the meaning of brainf*ck by writing a semantics module.
 
@@ -97,27 +97,27 @@ So here’s what we’ll do:
 
 
 \section{Flight preparations}
-Since we’re starting from scratch, let’s first make a work directory where we’ll keep our source code. I’ll call the directory "bf/", but you can use whatever name you want.
+Since we're starting from scratch, let's first make a work directory where we'll keep our source code. I'll call the directory "bf/", but you can use whatever name you want.
 \begin{verbatim}
 $ mkdir bf
 \end{verbatim}
-Ultimately, we want to put the fruit of our labor onto PLaneT, since that’ll make it easier for others to use our work. Let’s set up a PLaneT development link so the Racket environment knows about our work directory. I already have an account on PLaneT with my username dyoo. You can get an account fairly easily.
+Ultimately, we want to put the fruit of our labor onto PLaneT, since that'll make it easier for others to use our work. Let's set up a PLaneT development link so the Racket environment knows about our work directory. I already have an account on PLaneT with my username dyoo. You can get an account fairly easily.
 
 If we enter the following at the command line,
 \begin{verbatim}
 $ planet link dyoo bf.plt 1 0 bf
 \end{verbatim}
-we’ll make a development link that will associate any module path of the form (planet dyoo/bf/...) to our local "bf/" directory. Later on, when we create a package and upload it to PLaneT, we can drop this development link, and then all the references that use (planet dyoo/bf/...) will immediately switch over to the one on the PLaneT server.
+we'll make a development link that will associate any module path of the form (planet dyoo/bf/...) to our local "bf/" directory. Later on, when we create a package and upload it to PLaneT, we can drop this development link, and then all the references that use (planet dyoo/bf/...) will immediately switch over to the one on the PLaneT server.
 
 
-But does the link actually work? Let’s write a very simple module in our work directory, and then see that Racket can find it through PLaneT.
+But does the link actually work? Let's write a very simple module in our work directory, and then see that Racket can find it through PLaneT.
 \begin{verbatim}
 $ cd bf
 ~/bf$ cat >hello.rkt
 #lang racket
 "hello world"
 \end{verbatim}
-Ok, let’s see if Racket can find our magnificent "hello.rkt" module if we use the PLaneTized version of the name.
+Ok, let's see if Racket can find our magnificent "hello.rkt" module if we use the PLaneTized version of the name.
 \begin{verbatim}
 ~/bf$ racket
 Welcome to Racket v5.1.1.
@@ -125,11 +125,11 @@ Welcome to Racket v5.1.1.
 "hello world"
 >
 \end{verbatim}
-If we get to this point, then we’ve got the PLaneT development link in place.
+If we get to this point, then we've got the PLaneT development link in place.
 
 
 \section{The brainf*ck language}
-When we look at the definition of brainf*ck, it’s actually not too bad. There’s two bits of state,
+When we look at the definition of brainf*ck, it's actually not too bad. There's two bits of state,
 
 \begin{itemize}
 \item a byte array of data, and
@@ -138,22 +138,22 @@ When we look at the definition of brainf*ck, it’s actually not too bad. There�
 
 and it has only a few operations that affect this state:
 \begin{itemize}
-\item Increment the data pointer (>)
+\item Increment the data pointer (\verb|>|)
 
-\item Decrement the data pointer (<)
+\item Decrement the data pointer (\verb|<|)
 
-\item Increment the byte at the data pointer (+)
+\item Increment the byte at the data pointer (\verb|+|)
 
-\item Decrement the byte at the data pointer (-)
+\item Decrement the byte at the data pointer (\verb|-|)
 
-\item Write a byte to standard output (.)
+\item Write a byte to standard output (\verb|.|)
 
-\item Read a byte from standard input (,)
+\item Read a byte from standard input (\verb|,|)
 
-\item Perform a loop until the byte at the data pointer is zero ([, ])
+\item Perform a loop until the byte at the data pointer is zero (\verb|[|, \verb|]|)
 \end{itemize}
 
-Let’s write a module that lets us play with such a system: let’s call it "semantics.rkt".
+Let's write a module that lets us play with such a system: let's call it "semantics.rkt".
 \begin{verbatim}
 "semantics.rkt"
 #lang racket
@@ -214,7 +214,7 @@ Let’s write a module that lets us play with such a system: let’s call it "se
       body ...
       (loop))))
 \end{verbatim}
-Ok, that doesn’t seem too bad. But of course, we should test this; let’s use the "rackunit" unit testing framework and tickle this code. Let’s add a little more to the end of "semantics.rkt".
+Ok, that doesn't seem too bad. But of course, we should test this; let's use the "rackunit" unit testing framework and tickle this code. Let's add a little more to the end of "semantics.rkt".
 \begin{verbatim}
 "semantics.rkt"
 ;; Simple exercises.
@@ -279,10 +279,10 @@ Ok, that doesn’t seem too bad. But of course, we should test this; let’s use
 \end{verbatim}
 Good! Our tests, at the very least, let us know that our definitions are doing something reasonable, and they should all pass.
 
-However, there are a few things that we may want to fix in the future, like the lack of error trapping if the input stream contains eof. And there’s no bounds-checking on the ptr or on the values in the data. Wow, there are quite a few things that we might want to fix. But at the very least, we now have a module that captures the semantics of brainf*ck.
+However, there are a few things that we may want to fix in the future, like the lack of error trapping if the input stream contains eof. And there's no bounds-checking on the ptr or on the values in the data. Wow, there are quite a few things that we might want to fix. But at the very least, we now have a module that captures the semantics of brainf*ck.
 
 \section{Lisping a language}
-We might even be cheeky enough to insist that people write brainf*ck programs with s-expressions. Let’s take that route, and create a module language that uses our "semantics.rkt". We’ll create such a module language in "language.rkt".
+We might even be cheeky enough to insist that people write brainf*ck programs with s-expressions. Let's take that route, and create a module language that uses our "semantics.rkt". We'll create such a module language in "language.rkt".
 \begin{verbatim}
 "language.rkt"
 #lang racket
@@ -330,9 +330,9 @@ We might even be cheeky enough to insist that people write brainf*ck programs wi
 (define-syntax-rule (brackets body ...)
   (loop (current-state) body ...))
 \end{verbatim}
-This "language.rkt" presents brainf*ck as a s-expression-based language. It uses the semantics we’ve coded up, and defines rules for handling greater-than, less-than, etc... We have a parameter called current-state that holds the state of the brainf*ck machine that’s used through the language.
+This "language.rkt" presents brainf*ck as a s-expression-based language. It uses the semantics we've coded up, and defines rules for handling greater-than, less-than, etc... We have a parameter called current-state that holds the state of the brainf*ck machine that's used through the language.
 
-There’s one piece of this language that looks particularly mysterious: what’s the \verb+#%module-begin+ form, and what is it doing? In Racket, every module has an implicit \verb+#%module-begin+ that wraps around the entirety of the module’s body. We can see this by asking Racket to show us the results of the expansion process; here’s a small example to demonstrate.
+There's one piece of this language that looks particularly mysterious: what's the \verb+#%module-begin+ form, and what is it doing? In Racket, every module has an implicit \verb+#%module-begin+ that wraps around the entirety of the module's body. We can see this by asking Racket to show us the results of the expansion process; here's a small example to demonstrate.
 \begin{verbatim}
 > (syntax->datum
    (expand '(module an-example-module '#%kernel
@@ -340,7 +340,7 @@ There’s one piece of this language that looks particularly mysterious: what’
               "world")))
 '(module an-example-module '#%kernel (#%module-begin '"hello" '"world"))
 \end{verbatim}
-Ignore, for the moment, the use of syntax->datum or the funky use of \verb+'#%kernel+. What we should notice is that Racket has added in that \verb+#%module-begin+ around the \verb+"hello"+ and \verb+"world"+. So there’s the implicit wrapping that Racket is doing.
+Ignore, for the moment, the use of syntax->datum or the funky use of \verb+'#%kernel+. What we should notice is that Racket has added in that \verb+#%module-begin+ around the \verb+"hello"+ and \verb+"world"+. So there's the implicit wrapping that Racket is doing.
 
 
 It turns out that \verb+#%module-begin+ can be really useful! In particular, we want to guarantee that every module written in brainf*ck runs under a fresh state. If we had two brainf*ck programs running, say like this:
@@ -348,10 +348,10 @@ It turns out that \verb+#%module-begin+ can be really useful! In particular, we 
 (require "my-first-bf-program.rkt")
 (require "my-second-bf-program.rkt")
 \end{verbatim}
-then it would be a shame to have the two programs clash just because they brainf*cked each other’s data! By defining our own #%module-begin, we can ensure that each brainf*ck module has its own fresh version of the state, and our definition of my-module-begin does this for us.
+then it would be a shame to have the two programs clash just because they brainf*cked each other's data! By defining our own \verb+#%module-begin+, we can ensure that each brainf*ck module has its own fresh version of the state, and our definition of my-module-begin does this for us.
 
 
-Once we’ve written "language.rkt", we can use the language like this:
+Once we've written "language.rkt", we can use the language like this:
 \begin{verbatim}
 #lang s-exp (planet dyoo/bf/language)
  
@@ -375,19 +375,19 @@ Once we’ve written "language.rkt", we can use the language like this:
 (minus)(minus)(minus)(minus)(minus)(minus)(minus)(minus)
 (period)(greater-than) (plus) (period) (greater-than) (period)
 \end{verbatim}
-The #lang line here is saying, essentially, that the following program is written with s-expressions, and should be treated with the module language "language.rkt" that we just wrote up. And if we run this program, we should see a familiar greeting. Hurrah!
+The \verb+#lang+ line here is saying, essentially, that the following program is written with s-expressions, and should be treated with the module language "language.rkt" that we just wrote up. And if we run this program, we should see a familiar greeting. Hurrah!
 
-... But wait! We can’t just declare victory here. We really do want to allow the throngs of brainf*ck programmers to write brainf*ck in the surface syntax that they deserve. Keep "language.rkt" on hand, though. We will reuse it by having our parser transform the surface syntax into the forms we defined in "language.rkt".
+... But wait! We can't just declare victory here. We really do want to allow the throngs of brainf*ck programmers to write brainf*ck in the surface syntax that they deserve. Keep "language.rkt" on hand, though. We will reuse it by having our parser transform the surface syntax into the forms we defined in "language.rkt".
 
-Let’s get that parser working!
+Let's get that parser working!
 
 \section{Parsing the surface syntax}
 
-The Racket toolchain includes a professional-strength lexer and parser in the parser-tools collection. For the sake of keeping this example terse, we’ll write a simple recursive-descent parser without using the parser-tools collection. (But if our surface syntax were any more complicated, we might reconsider this decision.)
+The Racket toolchain includes a professional-strength lexer and parser in the parser-tools collection. For the sake of keeping this example terse, we'll write a simple recursive-descent parser without using the parser-tools collection. (But if our surface syntax were any more complicated, we might reconsider this decision.)
 
-The expected output of a successful parse should be some kind of abstract syntax tree. What representation should we use for the tree? Although we can use s-expressions, they’re pretty lossy: they don’t record where they came from in the original source text. For the case of brainf*ck, we might not care, but if we were to write a parser for a more professional, sophisticated language (like LOLCODE) we want source locations so we can give good error messages during parsing or run-time.
+The expected output of a successful parse should be some kind of abstract syntax tree. What representation should we use for the tree? Although we can use s-expressions, they're pretty lossy: they don't record where they came from in the original source text. For the case of brainf*ck, we might not care, but if we were to write a parser for a more professional, sophisticated language (like LOLCODE) we want source locations so we can give good error messages during parsing or run-time.
 
-As an alternative to plain s-expressions, we’ll use a data structure built into Racket called a syntax object; syntax objects let us represent ASTs, just like s-expressions, and they also carry along auxiliary information, such as source locations. Plus, as we briefly saw in our play with expand, syntax objects are the native data structure that Racket itself uses during macro expansion, so we might as well use them ourselves.
+As an alternative to plain s-expressions, we'll use a data structure built into Racket called a syntax object; syntax objects let us represent ASTs, just like s-expressions, and they also carry along auxiliary information, such as source locations. Plus, as we briefly saw in our play with expand, syntax objects are the native data structure that Racket itself uses during macro expansion, so we might as well use them ourselves.
 
 For example,
 \begin{verbatim}
@@ -398,7 +398,7 @@ For example,
                                    32
                                    5)))
 \end{verbatim}
-The first argument that we pass into datum->syntax lets us tell Racket any lexical-scoping information that we know about the datum, but in this case, we don’t have any on hand, so we just give it #f. Let’s look at the structure of this syntax object.
+The first argument that we pass into datum->syntax lets us tell Racket any lexical-scoping information that we know about the datum, but in this case, we don't have any on hand, so we just give it \verb+#f+. Let's look at the structure of this syntax object.
 \begin{verbatim}
 > an-example-syntax-object
 #<syntax:1:20 hello>
@@ -422,7 +422,7 @@ So a syntax object is a wrapper around an s-expression, and we can get the under
 > (syntax-span an-example-syntax-object)
 5
 \end{verbatim}
-Now that we have some experience playing with syntax objects, let’s write a parser. Our parser will consume an input-port, from which we can read in bytes with read-byte, or find out where we are with port-next-location. We also want to store some record of where our program originated from, so our parser will also take in a source-name parameter. We’ll write the following into "parser.rkt".
+Now that we have some experience playing with syntax objects, let's write a parser. Our parser will consume an input-port, from which we can read in bytes with read-byte, or find out where we are with port-next-location. We also want to store some record of where our program originated from, so our parser will also take in a source-name parameter. We'll write the following into "parser.rkt".
 \begin{verbatim}
 "parser.rkt"
 #lang racket
@@ -502,10 +502,10 @@ Now that we have some experience playing with syntax objects, let’s write a pa
       [else
        (cons next-expr (parse-exprs source-name in))])))
 \end{verbatim}
-This parser isn’t anything too tricky, although there’s a little bit of messiness because it needs to handle brackets recursively. That part is supposed to be a little messy anyway, since it’s the capstone that builds tree structure out of a linear character stream. (If we were using a parenthesized language, we could simply use read-syntax, but the whole point is to deal with the messiness of the surface syntax!)
+This parser isn't anything too tricky, although there's a little bit of messiness because it needs to handle brackets recursively. That part is supposed to be a little messy anyway, since it's the capstone that builds tree structure out of a linear character stream. (If we were using a parenthesized language, we could simply use read-syntax, but the whole point is to deal with the messiness of the surface syntax!)
 
 
-Let’s see if this parser does anything useful:
+Let's see if this parser does anything useful:
 \begin{verbatim}
 > (define my-sample-input-port (open-input-string ",[.,]"))
 > (define first-stx
@@ -519,7 +519,7 @@ Let’s see if this parser does anything useful:
 > (parse-expr "my-sample-program.rkt" my-sample-input-port)
 #<eof>
 \end{verbatim}
-Good! So we’re able to parse syntax objects out of an input stream.
+Good! So we're able to parse syntax objects out of an input stream.
 \begin{verbatim}
 > (syntax->datum second-stx)
 '(brackets (period) (comma))
@@ -530,12 +530,12 @@ Good! So we’re able to parse syntax objects out of an input stream.
 > (syntax-span second-stx)
 4
 \end{verbatim}
-And as we can see, we can explode the syntax object and look at its datum. We should note that the parser is generating syntax objects that use the same names as the defined names we have in our "language.rkt" module language. Yup, that’s deliberate, and we’ll see why in the next section.
+And as we can see, we can explode the syntax object and look at its datum. We should note that the parser is generating syntax objects that use the same names as the defined names we have in our "language.rkt" module language. Yup, that's deliberate, and we'll see why in the next section.
 
 
-We mentioned that the parser wasn’t too hard... but then again, we haven’t written good traps for error conditions. This parser is a baby parser. If we were more rigorous, we’d probably implement it with the parser-tools collection, write unit tests for the parser with rackunit, and make sure to produce good error messages when Bad Things happen (like having unbalanced brackets or parentheses.
+We mentioned that the parser wasn't too hard... but then again, we haven't written good traps for error conditions. This parser is a baby parser. If we were more rigorous, we'd probably implement it with the parser-tools collection, write unit tests for the parser with rackunit, and make sure to produce good error messages when Bad Things happen (like having unbalanced brackets or parentheses.
 
-Still, we’ve now got the language and a parser. How do we tie them together?
+Still, we've now got the language and a parser. How do we tie them together?
 
 \section{Crossing the wires}
 This part is fairly straightforward. We have two pieces in hand:
@@ -546,12 +546,12 @@ This part is fairly straightforward. We have two pieces in hand:
 \item A module language in "language.rkt" that provides the meaning for those ASTs.
 \end{itemize}
 
-To combine these two pieces together, we want to define a reader that associates the two. When Racket encounters a #lang line of the form:
+To combine these two pieces together, we want to define a reader that associates the two. When Racket encounters a \verb+#lang+ line of the form:
 \begin{verbatim}
 #lang planet dyoo/bf
 \end{verbatim}
 it will look for a reader module in "lang/reader.rkt" and use it to parse the file.
-Racket provides a helper module called syntax/module-reader to handle most of the dirty work; let’s use it. Make a "lang/" subdirectory, and create "reader.rkt" in that subdirectory, with the following content:
+Racket provides a helper module called syntax/module-reader to handle most of the dirty work; let's use it. Make a "lang/" subdirectory, and create "reader.rkt" in that subdirectory, with the following content:
 \begin{verbatim}
 "lang/reader.rkt"
 #lang s-exp syntax/module-reader
@@ -567,8 +567,8 @@ Racket provides a helper module called syntax/module-reader to handle most of th
 (define (my-read-syntax src in)
   (parse-expr src in))
 \end{verbatim}
-Some of this is magic, so let’s step through this. The second line of the file tells syntax/module-reader that any syntax objects that come out are intended to take on their semantics from our language module "language.rkt". syntax/module-reader is predisposed to assume that programs are read using read and read-syntax, so we override that default and plug in our parse-expr function into place.
-Now that we have all these pieces together, does any of this work? Let’s try it!
+Some of this is magic, so let's step through this. The second line of the file tells syntax/module-reader that any syntax objects that come out are intended to take on their semantics from our language module "language.rkt". syntax/module-reader is predisposed to assume that programs are read using read and read-syntax, so we override that default and plug in our parse-expr function into place.
+Now that we have all these pieces together, does any of this work? Let's try it!
 \begin{verbatim}
 $ cat hello2.rkt
 #lang planet dyoo/bf
@@ -584,9 +584,9 @@ Hello, World!
 Sweet, sweet words.
 
 \section{Landing on PLaneT}
-Finally, we want to get this work onto PLaneT so that other people can share in the joy of writing brainf*ck in Racket. Let’s do it!
+Finally, we want to get this work onto PLaneT so that other people can share in the joy of writing brainf*ck in Racket. Let's do it!
 
-First, let’s go back to the parent of our work directory. Once we’re there, we’ll use the planet create command.
+First, let's go back to the parent of our work directory. Once we're there, we'll use the planet create command.
 \begin{verbatim}
 $ planet create bf
 planet create bf
@@ -594,13 +594,14 @@ MzTarring ./...
 MzTarring ./lang...
  
 WARNING:
-        Package has no info.rkt file. This means it will not have a description or documentation on the PLaneT web site.
+        Package has no info.rkt file. This means it will not have a description
+        or documentation on the PLaneT web site.
  
 $ ls -l bf.plt
 -rw-rw-r-- 1 dyoo nogroup 3358 Jun 12 19:39 bf.plt
 \end{verbatim}
 
-There are a few warnings, because we haven’t defined an "info.rkt" which provides metadata about our package. Good, diligent citizens would write an "info.rkt" file, so let’s write one.
+There are a few warnings, because we haven't defined an "info.rkt" which provides metadata about our package. Good, diligent citizens would write an "info.rkt" file, so let's write one.
 \begin{verbatim}
 "info.rkt"
 #lang setup/infotab
@@ -617,32 +618,24 @@ There are a few warnings, because we haven’t defined an "info.rkt" which provi
 (define release-notes
   '((p "First release")))
 \end{verbatim}
-Before we upload the package, let’s make sure the "bf.plt" package works for us locally. We’ll simulate an installation. First, let’s break the development link.
+Before we upload the package, let's make sure the "bf.plt" package works for us locally. We'll simulate an installation. First, let's break the development link.
 \begin{verbatim}
 $ planet unlink dyoo bf.plt 1 0
 \end{verbatim}
 If we try running our test program from before, it should fail on us.
 \begin{verbatim}
 $ racket hello2.rkt
-require: PLaneT could not find the requested package: Server had no matching package: No package matched the specified criteria
+require: PLaneT could not find the requested package: Server had no matching package:
+         No package matched the specified criteria
 \end{verbatim}
-Ok, that was expected. Since we’ve dissolved the development link, and since we haven’t uploaded the package onto the PLaneT network yet, we see the error that we expect to see.
-Next, let’s use planet fileinject to simulate an installation of our package from PLaneT.
+Ok, that was expected. Since we've dissolved the development link, and since we haven't uploaded the package onto the PLaneT network yet, we see the error that we expect to see.
+Next, let's use planet fileinject to simulate an installation of our package from PLaneT.
 \begin{verbatim}
 $ planet fileinject dyoo bf.plt 1 0
 planet fileinject dyoo bf.plt 1 0
  
 ============= Installing bf.plt on Sun, 12 Jun 2011 19:49:50 =============
 raco setup: Unpacking archive from /home/dyoo/bf.plt
-raco setup:   unpacking README in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking hello.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking hello2.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   making directory lang in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking reader.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./lang/
-raco setup:   unpacking language.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking parser.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking semantics.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup: version: 5.1.1 [3m]
 ...
 \end{verbatim}
 Lots and lots of output later, the package should be installed.
@@ -655,7 +648,7 @@ Hello, World!
 \end{verbatim}
 Good! This simulates the situation where the package has been installed from PLaneT.
 
-Once we’re finally satisfied with the package’s contents, we can finally upload it onto PLaneT. If you log onto planet.racket-lang.org, the user interface will allow you to upload your "bf.plt" package.
+Once we're finally satisfied with the package's contents, we can finally upload it onto PLaneT. If you log onto planet.racket-lang.org, the user interface will allow you to upload your "bf.plt" package.
 
 
 \end{document}
