@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage{fullpage}
+\usepackage[all]{xy}
 \begin{document}
 \section{Introduction}
 
@@ -9,10 +10,11 @@ Is that really true? Racket does include a nice macro system, which allows a pro
 \begin{verbatim}
 #lang racket
 (define-syntax-rule (while test body ...)
-  (let loop ()
-     (when test
-        body ...
-        (loop))))
+  (local [(define (loop)
+            (when test
+              body ...
+              (loop)))]
+    (loop)))
 ;; From this point forward, we've got while loops.
 (while (not (string=? (read-line) "quit"))
   (printf "never going to give you up\n")
@@ -76,12 +78,12 @@ We want to teach Racket what it means when we say something like:
 ,[.,]
 \end{verbatim}
 As mentioned earlier, a \verb+#lang+ line is quite active: it tells the Racket runtime how to convert from the surface syntax to a meaningful program. Programs in Racket get digested in a few stages; the process looks something like this:
-
-\begin{verbatim}
-                 reader        macro expansion
-surface syntax ---------> AST -----------------> core forms
-\end{verbatim}
-
+%
+\begin{displaymath}
+\xymatrix {
+    \txt{surface syntax} \ar[rr]^-{\txt{reader}}  & &\txt{AST} \ar[rr]^-{\txt{macro\\expansion}} & & \txt{core forms}}
+\end{displaymath}
+%
 When Racket sees \verb+#lang planet dyoo/bf+, it will look for a particular module that we call a reader; a reader consumes surface syntax and excretes ASTs, and these ASTs are then annotated so that Racket knows how to make sense out of them later on. At this point, the rest of the Racket infrastructure kicks in and macro-expands the ASTs out, ultimately, to a core language.
 
 So here's what we'll do:
@@ -135,7 +137,7 @@ When we look at the definition of brainf*ck, it's actually not too bad. There's 
 \item a byte array of data, and
 \item a pointer into that data array
 \end{itemize}
-
+%
 and it has only a few operations that affect this state:
 \begin{itemize}
 \item Increment the data pointer (\verb|>|)
@@ -155,12 +157,10 @@ and it has only a few operations that affect this state:
 
 Let's write a module that lets us play with such a system: let's call it ``semantics.rkt''.
 \begin{verbatim}
-"semantics.rkt"
 #lang racket
  
 (require rackunit)                ;; for unit testing
 (provide (all-defined-out))
- 
  
 ;; Our state contains two pieces.
 (define-struct state (data ptr)
@@ -169,8 +169,7 @@ Let's write a module that lets us play with such a system: let's call it ``seman
 ;; Creates a new state, with a byte array of 30000 zeros, and
 ;; the pointer at index 0.
 (define (new-state)
-  (make-state (make-vector 30000 0)
-              0))
+  (make-state (make-vector 30000 0) 0))
  
 ;; increment the data pointer
 (define (increment-ptr a-state)
@@ -182,37 +181,36 @@ Let's write a module that lets us play with such a system: let's call it ``seman
  
 ;; increment the byte at the data pointer
 (define (increment-byte a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
-    (vector-set! v i (add1 (vector-ref v i)))))
+  (define v (state-data a-state))
+  (define i (state-ptr a-state))
+  (vector-set! v i (add1 (vector-ref v i))))
  
 ;; decrement the byte at the data pointer
 (define (decrement-byte a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
-    (vector-set! v i (sub1 (vector-ref v i)))))
+  (define v (state-data a-state))
+  (define i (state-ptr a-state))
+  (vector-set! v i (sub1 (vector-ref v i))))
  
 ;; print the byte at the data pointer
 (define (write-byte-to-stdout a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
-    (write-byte (vector-ref v i) (current-output-port))))
+  (define v (state-data a-state))
+  (define i (state-ptr a-state))
+  (write-byte (vector-ref v i) (current-output-port)))
  
 ;; read a byte from stdin into the data pointer
 (define (read-byte-from-stdin a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
-    (vector-set! v i (read-byte (current-input-port)))))
+  (define v (state-data a-state))
+  (define i (state-ptr a-state))
+  (vector-set! v i (read-byte (current-input-port))))
  
- 
-;; we know how to do loops!
+;; loops
 (define-syntax-rule (loop a-state body ...)
-  (let loop ()
-    (unless (= (vector-ref (state-data a-state)
-                           (state-ptr a-state))
-               0)
-      body ...
-      (loop))))
+  (local [(define (loop)
+            (unless (= (vector-ref (state-data a-state) (state-ptr a-state))
+                       0)
+              body ...
+              (loop)))]
+    (loop)))
 \end{verbatim}
 Ok, that doesn't seem too bad. But of course, we should test this; let's use the \verb|rackunit| unit testing framework and tickle this code. Let's add a little more to the end of ``semantics.rkt''.
 \begin{verbatim}
