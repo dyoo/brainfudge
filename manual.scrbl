@@ -603,7 +603,7 @@ We'll write the following into @filepath{parser.rkt}.
   (define-values (line column position) (port-next-location in))
   (define next-char (read-char in))
   
-  ;; decorate/span: s-expression number -> syntax
+  ;; decorate: s-expression number -> syntax
   ;; Wrap the s-expression with source location.
   (define (decorate sexp span)
     (datum->syntax #f sexp (list src line column position span)))
