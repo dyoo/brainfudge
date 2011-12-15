@@ -5,7 +5,7 @@
           planet/resolver
           scribble/eval
           racket/sandbox
-          (for-label racket/base)
+          (for-label racket)
 	  (for-label racket/stxparam)
           (for-label racket/unsafe/ops)
           "scribble-helpers.rkt")
@@ -25,7 +25,7 @@
 
 
 @title{F*dging up a Racket}
-@author+email["Danny Yoo" "dyoo@cs.wpi.edu"]
+@author+email["Danny Yoo" "dyoo@hashcollision.org"]
 
 
 @;; I'll need an evaluator for some small examples.
