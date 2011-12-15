@@ -722,7 +722,7 @@ in that subdirectory, with the following content:
 (define (my-read-syntax src in)
   (parse-expr src in))
 }|}
-Some of this is magic, so let's step through this.  The second line of the file tells @racket[syntax/module-reader] that any syntax objects that
+Some of this is magic, so let's step through this.  The second line of the file tells @racketmodname[syntax/module-reader] that any syntax objects that
 come out are intended to take on their semantics from our language module @filepath{language.rkt}.  @racket[syntax/module-reader]
 is predisposed to assume that programs are read using @racket[read] and @racket[read-syntax], so we
 override that default and plug in our @racket[parse-expr] function into place.
