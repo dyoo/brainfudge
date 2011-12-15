@@ -94,7 +94,7 @@ how to take an arbitrary document and decide what HTML parsing rules
 to apply to it.
 
 
-@link["http://diveintohtml5.org/"]{HTML 5} tries to make this determination
+@link["http://en.wikipedia.org/wiki/HTML5"]{HTML 5} tries to make this determination
 somewhat more straightforward: we can define an HTML 5 document by
 putting a DOCTYPE element at the very top of the file which
 self-describes the document as being @emph{html}.
