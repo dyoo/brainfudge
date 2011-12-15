@@ -233,7 +233,7 @@ then see that Racket can find it through PLaneT.
 Ok, let's see if Racket can find our magnificent @filepath{hello.rkt} module if we use the PLaneTized version of the name. 
     @verbatim|{
     ~/bf$ racket
-    Welcome to Racket v5.1.1.
+    Welcome to Racket v5.2.
     > (require (planet dyoo/bf/hello))
     "hello world"
     > 
@@ -811,15 +811,6 @@ planet fileinject dyoo bf.plt 1 0
 
 ============= Installing bf.plt on Sun, 12 Jun 2011 19:49:50 =============
 raco setup: Unpacking archive from /home/dyoo/bf.plt
-raco setup:   unpacking README in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking hello.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking hello2.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   making directory lang in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking reader.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./lang/
-raco setup:   unpacking language.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking parser.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup:   unpacking semantics.rkt in /home/dyoo/.racket/planet/300/5.1.1/cache/dyoo/bf.plt/1/0/./
-raco setup: version: 5.1.1 [3m]
 ...
           }|
 Lots and lots of output later, the package should be installed.
