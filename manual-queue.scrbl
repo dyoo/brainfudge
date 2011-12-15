@@ -12,6 +12,7 @@
 
 
 @inject-css{extra.css}
+@inject-css{extra-queue.css}
 
 
 @title{F*dging up a Racket}
@@ -305,7 +306,8 @@ Let's write a module that lets us play with such a system: let's call it @filepa
 ;; we know how to do loops!
 (define-syntax-rule (loop a-state body ...)
   (local [(define (loop)
-            (unless (= (vector-ref (state-data a-state) (state-ptr a-state))
+            (unless (= (vector-ref (state-data a-state)
+                                   (state-ptr a-state))
                         0)
               body ...
               (loop)))]
@@ -830,22 +832,11 @@ wonderful.  The
 @link["http://lists.racket-lang.org/users/archive/2011-June/046090.html"]{mailing
 list thread} shows how many people have helped to shape this tutorial.
 
-
 Guillaume Marceau, Rodolfo Carvalho, Eric Hanchrow, and Shriram helped
 with grammar and spelling checks.  Casey Klein suggested a section in
 the tutorial that shows how we can generate errors that point to
-original sources.  Eli Barzilay pushed on including an optimization
-section, which is included in the extended tutorial.
-
-Furthermore, thanks to those who commented from the
-@link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming}
-Reddit thread: they helped isolate a performance issue regarding
-parameters and further motivated the following section on
-optimization.  David Van Horn pointed out how to use
-@link["http://pypy.org"]{PyPy}'s JIT properly, with amazing results.
-Sam Tobin-Hochstadt and Jay McCarthy provided a few optimization
-suggestions, many of which have are in the main @racketmodname[(planet
-dyoo/bf)] implementation.
+original sources, and Eli Barzilay pushed on including an optimization
+section.  The extended tutorial includes both of these topics.
 
 Finally, big shoutouts to the PLT group at
 Brown University --- this one is for you guys.  :)
