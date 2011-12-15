@@ -60,10 +60,11 @@ example, we can get while loops into Racket with relative ease:
     @codeblock{
     #lang racket
     (define-syntax-rule (while test body ...)
-      (let loop ()
-         (when test
-            body ...
-            (loop))))   
+      (local [(define (loop)
+                (when test
+                  body ...
+                  (loop)))]
+        (loop)))
     ;; From this point forward, we've got while loops.
     (while (not (string=? (read-line) "quit"))
       (printf "never going to give you up\n")
@@ -293,37 +294,37 @@ Let's write a module that lets us play with such a system: let's call it @filepa
 
 ;; increment the byte at the data pointer
 (define (increment-byte a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
-    (vector-set! v i (add1 (vector-ref v i)))))
+  (define v (state-data a-state))
+  (define i (state-ptr a-state))
+  (vector-set! v i (add1 (vector-ref v i))))
 
 ;; decrement the byte at the data pointer
 (define (decrement-byte a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
-    (vector-set! v i (sub1 (vector-ref v i)))))
+  (define v (state-data a-state))
+  (define i (state-ptr a-state))
+  (vector-set! v i (sub1 (vector-ref v i))))
 
 ;; print the byte at the data pointer
 (define (write-byte-to-stdout a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
-    (write-byte (vector-ref v i) (current-output-port))))
+  (define v (state-data a-state))
+  (define i (state-ptr a-state))
+  (write-byte (vector-ref v i) (current-output-port)))
 
 ;; read a byte from stdin into the data pointer
 (define (read-byte-from-stdin a-state)
-  (let ([v (state-data a-state)]
-        [i (state-ptr a-state)])
-    (vector-set! v i (read-byte (current-input-port)))))
+  (define v (state-data a-state))
+  (define i (state-ptr a-state))
+  (vector-set! v i (read-byte (current-input-port))))
 
 
 ;; we know how to do loops!
 (define-syntax-rule (loop a-state body ...)
-  (let loop ()
-    (unless (= (vector-ref (state-data a-state)
-                           (state-ptr a-state))
-               0)
-      body ...
-      (loop))))
+  (local [(define (loop)
+            (unless (= (vector-ref (state-data a-state) (state-ptr a-state))
+                        0)
+              body ...
+              (loop)))]
+    (loop)))
 }|}
 
 Ok, that doesn't seem too bad.  But of course, we should test this; let's use
@@ -592,81 +593,58 @@ We'll write the following into @filepath{parser.rkt}.
 @filebox["parser.rkt"]{
                           @codeblock|{
 #lang racket
-
 ;; The only visible export of this module will be parse-expr.
 (provide parse-expr)
 
-;; While loops...
-(define-syntax-rule (while test body ...)
-  (let loop ()
-    (when test
-      body ...
-      (loop))))
-
-
-;; ignorable-next-char?: input-port -> boolean
-;; Produces true if the next character is something we should ignore.
-(define (ignorable-next-char? in)
-  (let ([next-ch (peek-char in)])
-    (cond
-      [(eof-object? next-ch)
-       #f]
-      [else
-       (not (member next-ch '(#\< #\> #\+ #\- #\, #\. #\[ #\])))])))
-
-
 ;; parse-expr: any input-port -> (U syntax eof)
 ;; Either produces a syntax object or the eof object.
-(define (parse-expr source-name in)
-  (while (ignorable-next-char? in) (read-char in))
-  (let*-values ([(line column position) (port-next-location in)]
-                [(next-char) (read-char in)])
-    
-    ;; We'll use this function to generate the syntax objects by
-    ;; default.
-    ;; The only category this doesn't cover are brackets.
-    (define (default-make-syntax type)
-      (datum->syntax #f 
-                     (list type)
-                     (list source-name line column position 1)))
-    (cond
-      [(eof-object? next-char) eof]
-      [else
-       (case next-char
-         [(#\<) (default-make-syntax 'less-than)]
-         [(#\>) (default-make-syntax 'greater-than)]
-         [(#\+) (default-make-syntax 'plus)]
-         [(#\-) (default-make-syntax 'minus)]
-         [(#\,) (default-make-syntax 'comma)]
-         [(#\.) (default-make-syntax 'period)]
-         [(#\[)
-          ;; The slightly messy case is bracket.  We keep reading
-          ;; a list of exprs, and then construct a wrapping bracket
-          ;; around the whole thing.
-          (let*-values ([(elements) (parse-exprs source-name in)]
-                        [(following-line following-column 
-                                         following-position) 
-                         (port-next-location in)])
-            (datum->syntax #f 
-                           `(brackets ,@elements)
-                           (list source-name
-                                 line
-                                 column 
-                                 position 
-                                 (- following-position
-                                    position))))]
-         [(#\])
-          eof])])))
+(define (parse-expr src in)
+  (define-values (line column position) (port-next-location in))
+  (define next-char (read-char in))
+  
+  (define (decorate/1 sexp)
+    (datum->syntax #f sexp (list src line column position 1)))
+
+  (define (decorate/span sexp span)
+    (datum->syntax #f sexp (list src line column position span)))
+
+  (cond
+    [(eof-object? next-char) eof]
+    [else
+     (case next-char
+       [(#\<) (decorate/1 '(less-than))]
+       [(#\>) (decorate/1 '(greater-than))]
+       [(#\+) (decorate/1 '(plus))]
+       [(#\-) (decorate/1 '(minus))]
+       [(#\,) (decorate/1 '(comma))]
+       [(#\.) (decorate/1 '(period))]
+       [(#\[)
+        ;; The slightly messy case is bracket.  We keep reading
+        ;; a list of exprs, and then construct a wrapping bracket
+        ;; around the whole thing.
+        (define elements (parse-exprs src in))
+        (define-values (_1 _2 next-position) (port-next-location in))
+        (decorate/span `(brackets ,@elements)
+                       (- next-position position))]
+       [else
+        (parse-expr src in)])]))
 
 ;; parse-exprs: input-port -> (listof syntax)
 ;; Parse a list of expressions.
 (define (parse-exprs source-name in)
-  (let ([next-expr (parse-expr source-name in)])
-    (cond
-      [(eof-object? next-expr)
-       empty]
-      [else
-       (cons next-expr (parse-exprs source-name in))])))
+  (define peeked-char (peek-char in))
+  (cond
+    [(eof-object? peeked-char)
+     (error 'parse-exprs "Expected ], but read eof")]
+    [(char=? peeked-char #\])
+     (read-char in)
+     empty]
+    [(member peeked-char (list #\< #\> #\+ #\- #\, #\. #\[))
+     (cons (parse-expr source-name in)
+           (parse-exprs source-name in))]
+    [else
+     (read-char in)
+     (parse-exprs source-name in)]))
 }|}
 This parser isn't anything too tricky, although there's a little bit of 
 messiness because it needs to handle brackets recursively.  That part
@@ -678,6 +656,7 @@ with the messiness of the surface syntax!)
 Let's see if this parser does anything useful:
 @interaction[#:eval my-evaluator
                     (define my-sample-input-port (open-input-string ",[.,]"))
+                    (port-count-lines! my-sample-input-port)
                     (define first-stx
                       (parse-expr "my-sample-program.rkt" my-sample-input-port))
                     first-stx
