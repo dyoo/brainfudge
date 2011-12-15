@@ -602,30 +602,30 @@ We'll write the following into @filepath{parser.rkt}.
   (define-values (line column position) (port-next-location in))
   (define next-char (read-char in))
   
-  (define (decorate/1 sexp)
-    (datum->syntax #f sexp (list src line column position 1)))
-
-  (define (decorate/span sexp span)
+  ;; decorate/span: s-expression number -> syntax
+  ;; Wrap the s-expression with source location.
+  (define (decorate sexp span)
     (datum->syntax #f sexp (list src line column position span)))
 
   (cond
     [(eof-object? next-char) eof]
     [else
      (case next-char
-       [(#\<) (decorate/1 '(less-than))]
-       [(#\>) (decorate/1 '(greater-than))]
-       [(#\+) (decorate/1 '(plus))]
-       [(#\-) (decorate/1 '(minus))]
-       [(#\,) (decorate/1 '(comma))]
-       [(#\.) (decorate/1 '(period))]
+       [(#\<) (decorate '(less-than) 1)]
+       [(#\>) (decorate '(greater-than) 1)]
+       [(#\+) (decorate '(plus) 1)]
+       [(#\-) (decorate '(minus) 1)]
+       [(#\,) (decorate '(comma) 1)]
+       [(#\.) (decorate '(period) 1)]
        [(#\[)
         ;; The slightly messy case is bracket.  We keep reading
         ;; a list of exprs, and then construct a wrapping bracket
         ;; around the whole thing.
         (define elements (parse-exprs src in))
-        (define-values (_1 _2 next-position) (port-next-location in))
-        (decorate/span `(brackets ,@elements)
-                       (- next-position position))]
+        (define-values (l c tail-position) 
+          (port-next-location in))
+        (decorate `(brackets ,@elements)
+                  (- tail-position position))]
        [else
         (parse-expr src in)])]))
 
