@@ -11,6 +11,9 @@
           "scribble-helpers.rkt")
 
 
+@inject-css{extra.css}
+
+
 @title{F*dging up a Racket}
 @author+email["Danny Yoo" "dyoo@hashcollision.org"]
 
@@ -832,7 +835,7 @@ Guillaume Marceau, Rodolfo Carvalho, Eric Hanchrow, and Shriram helped
 with grammar and spelling checks.  Casey Klein suggested a section in
 the tutorial that shows how we can generate errors that point to
 original sources.  Eli Barzilay pushed on including an optimization
-section.
+section, which is included in the extended tutorial.
 
 Furthermore, thanks to those who commented from the
 @link["http://www.reddit.com/r/programming/comments/i1slm/amazing_tutorial_demonstrating_the_power_of/"]{/r/programming}

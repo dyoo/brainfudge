@@ -10,6 +10,7 @@
           (for-label racket/unsafe/ops)
           "scribble-helpers.rkt")
 
+@inject-css{extra.css}
 
 @inject-javascript|{
   var _gaq = _gaq || [];
