@@ -329,7 +329,7 @@ Let's write a module that lets us play with such a system: let's call it @filepa
 }|}
 
 Ok, that doesn't seem too bad.  But of course, we should test this; let's use
-the @racketmodname{rackunit} unit testing framework and tickle this code.  Let's add
+the @racketmodname[rackunit] unit testing framework and tickle this code.  Let's add
 a little more to the end of @filepath{semantics.rkt}.
 @filebox["semantics.rkt"]{
 @codeblock|{           
