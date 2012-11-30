@@ -215,7 +215,7 @@ on PLaneT with my username @tt{dyoo}.  You can
 
 If we enter the following at the command line,
 @verbatim|{
-   $ planet link dyoo bf.plt 1 0 bf
+   $ raco planet link dyoo bf.plt 1 0 bf
    }|
 we'll make a development link that will associate any module path of the form @racket[(planet dyoo/bf/...)] 
 to our local @filepath{bf/} directory.  Later on, when we create a package and upload it to PLaneT,
@@ -758,7 +758,7 @@ of writing @tt{brainf*ck} in Racket.  Let's do it!
 First, let's go back to the parent of our work directory.  Once we're there, we'll use the @tt{planet create} command.
 
 @verbatim|{
-$ planet create bf
+$ raco planet create bf
 planet create bf
 MzTarring ./...
 MzTarring ./lang...
@@ -794,7 +794,7 @@ about our package.  Good, diligent citizens would  @link["http://docs.racket-lan
 
 Before we upload the package, let's make sure the @filepath{bf.plt} package works for us locally.  We'll simulate an installation.  First, let's break the development link.
 @verbatim{
-$ planet unlink dyoo bf.plt 1 0
+$ raco planet unlink dyoo bf.plt 1 0
 }
 If we try running our test program from before, it should fail on us.
 
@@ -807,7 +807,7 @@ package onto the PLaneT network yet, we see the error that we expect to see.
 
 Next, let's use @tt{planet fileinject} to simulate an installation of our package from PLaneT.
 @verbatim|{
-$ planet fileinject dyoo bf.plt 1 0
+$ raco planet fileinject dyoo bf.plt 1 0
 planet fileinject dyoo bf.plt 1 0
 
 ============= Installing bf.plt on Sun, 12 Jun 2011 19:49:50 =============
