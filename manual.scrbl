@@ -857,7 +857,7 @@ parameters and further motivated the following section on
 optimization.  David Van Horn pointed out how to use
 @link["http://pypy.org"]{PyPy}'s JIT properly, with amazing results.
 Sam Tobin-Hochstadt and Jay McCarthy provided a few optimization
-suggestions, many of which have are in the main @racketmodname[(planet
+suggestions, many of which are in the main @racketmodname[(planet
 dyoo/bf)] implementation.
 
 Finally, big shoutouts to the PLT group at
