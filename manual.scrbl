@@ -250,7 +250,7 @@ If we get to this point, then we've got the PLaneT development link in place.
 @;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 When we look at the definition of @link["http://en.wikipedia.org/wiki/Brainf*ck"]{@tt{brainf*ck}},
-it's actually not too bad.  There's two bits of state,
+it's actually not too bad.  There's two pieces of state,
 @itemlist[
           @item{a byte array of data, and}
           @item{a pointer into that data array}
